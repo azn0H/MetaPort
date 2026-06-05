@@ -98,8 +98,16 @@ function DashboardPage() {
         <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm">
           <h2 className="text-lg font-semibold text-white mb-6">Resource Usage</h2>
           <div className="flex justify-around">
-            <CircularProgress value={Math.round((data.ram_used_mb / data.ram_total_mb) * 100)} label="RAM Usage" color="text-emerald-400" />
-            <CircularProgress value={Math.round(((data.disk_total_gb - data.disk_free_gb) / data.disk_total_gb) * 100)} label="Disk Usage" color="text-orange-400" />
+            <CircularProgress 
+              value={data.ram_total_mb > 0 ? Math.round((data.ram_used_mb / data.ram_total_mb) * 100) : 0} 
+              label="RAM Usage" 
+              color="text-emerald-400" 
+            />
+            <CircularProgress 
+              value={data.disk_total_gb > 0 ? Math.round(((data.disk_total_gb - data.disk_free_gb) / data.disk_total_gb) * 100) : 0} 
+              label="Disk Usage" 
+              color="text-orange-400" 
+            />
           </div>
         </div>
 
