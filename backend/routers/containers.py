@@ -17,9 +17,10 @@ ENDPOINT_ID = int(os.getenv("PORTAINER_ENDPOINT_ID"))
 class ContainerSummary(BaseModel):
     id: str
     name: str
-    state: str
+    status: str
     image: str
     ports: str
+    created: str
 
 @router.get("", response_model=List[ContainerSummary])
 async def get_containers(current_user: str = Depends(get_current_user)):
@@ -35,7 +36,7 @@ async def get_containers(current_user: str = Depends(get_current_user)):
             containers = response.json()
             result = []
             for c in containers:
-                names = c.get("Names", [""])
+                names = c.get("Names", [])
                 name = names[0].lstrip("/") if names else "unknown"
                 
                 ports_list = []
@@ -46,11 +47,12 @@ async def get_containers(current_user: str = Depends(get_current_user)):
 
                 result.append(
                     ContainerSummary(
-                        id=c.get("Id", ""),
+                        id=c.get("Id", "")[:12],
                         name=name,
-                        state=c.get("State", ""),
-                        image=c.get("Image", ""),
-                        ports=ports_str
+                        status=c.get("State", "unknown"),
+                        image=c.get("Image", "unknown"),
+                        ports=ports_str,
+                        created=c.get("Status", "-")
                     )
                 )
             return result

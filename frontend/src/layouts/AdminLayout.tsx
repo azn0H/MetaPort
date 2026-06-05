@@ -13,14 +13,14 @@ function AdminLayout() {
 
   const handleLogout = () => {
     localStorage.removeItem('jwt_token')
-    navigate('/login')
+    navigate('/')
   }
 
   return (
     <div className="min-h-screen bg-slate-950 flex">
       <aside className="w-64 bg-slate-900/50 border-r border-slate-800 flex flex-col backdrop-blur-sm">
         <div className="p-6 border-b border-slate-800">
-          <h1 className="text-xl font-bold text-white">MetaPort</h1>
+          <h1 className="text-xl font-bold text-white">Metafra</h1>
           <p className="text-slate-500 text-sm mt-1">Admin Panel</p>
         </div>
 
