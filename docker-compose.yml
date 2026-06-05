@@ -4,7 +4,7 @@ services:
     container_name: metaport-backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8025:8025"
     volumes:
       - ./backend/docs:/app/docs
       - ./backend/.env:/app/.env
