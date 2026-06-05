@@ -27,6 +27,14 @@ const apps = [
   },
   {
     id: 4,
+    title: 'MetaPort',
+    description: 'Developer tools and resources',
+    icon: Globe,
+    url: 'https://metaport.aznoh.cz/admin',
+    gradient: 'from-indigo-500 to-purple-600',
+  },
+    {
+    id: 5,
     title: 'DevHub',
     description: 'Developer tools and resources',
     icon: Globe,

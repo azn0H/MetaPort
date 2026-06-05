@@ -7,3 +7,4 @@ python-multipart
 pyjwt[crypto]
 passlib[bcrypt]
 python-dotenv
+bcrypt==3.2.2
