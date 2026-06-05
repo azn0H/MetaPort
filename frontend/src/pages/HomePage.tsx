@@ -1,5 +1,4 @@
 import { Book, Globe, Layers, PenTool } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import MetafraLogo from '@/icons/Metafra_bez_text.svg'
 
 const apps = [
