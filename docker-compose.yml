@@ -14,8 +14,6 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: metaport-cloudflared
     restart: unless-stopped
-    command: tunnel run
+    command: tunnel --no-autoupdate run
     env_file:
       - ./backend/.env
-    environment:
-      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
