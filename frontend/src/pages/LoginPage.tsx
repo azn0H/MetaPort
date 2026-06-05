@@ -27,7 +27,7 @@ function LoginPage() {
       formData.append('username', username)
       formData.append('password', password)
 
-      const response = await fetch(`${API_URL}/token`, {
+      const response = await fetch(`${API_URL}/api/v1/auth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
