@@ -2,6 +2,8 @@ import { useState, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, User, ArrowRight } from 'lucide-react'
 
+const API_URL = 'https://api-metaport.aznoh.cz'
+
 function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -14,17 +16,37 @@ function LoginPage() {
     setError('')
     setIsLoading(true)
 
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
-    if (username && password) {
-      const fakeToken = btoa(JSON.stringify({ username, exp: Date.now() + 3600000 }))
-      localStorage.setItem('jwt_token', fakeToken)
-      navigate('/admin')
-    } else {
+    if (!username || !password) {
       setError('Please enter both username and password')
+      setIsLoading(false)
+      return
     }
 
-    setIsLoading(false)
+    try {
+      const formData = new URLSearchParams()
+      formData.append('username', username)
+      formData.append('password', password)
+
+      const response = await fetch(`${API_URL}/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Invalid credentials')
+      }
+
+      const data = await response.json()
+      localStorage.setItem('jwt_token', data.access_token)
+      navigate('/admin')
+    } catch (err) {
+      setError('Přihlášení se nezdařilo. Zkontrolujte jméno a heslo.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
