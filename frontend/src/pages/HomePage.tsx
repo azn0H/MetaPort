@@ -3,10 +3,10 @@ import { Book, Globe, Layers, PenTool } from 'lucide-react'
 const apps = [
   {
     id: 1,
-    title: 'Bookiva',
-    description: 'Digital library and book management platform',
+    title: 'TaskApp',
+    description: 'Task management and productivity platform',
     icon: Book,
-    url: 'https://bookiva.example.com',
+    url: 'https://taskapp.aznoh.cz',
     gradient: 'from-cyan-500 to-blue-600',
   },
   {
@@ -14,7 +14,7 @@ const apps = [
     title: 'Aznoh Blog',
     description: 'Personal blog and article publishing',
     icon: PenTool,
-    url: 'https://blog.aznoh.com',
+    url: 'https://blog.aznoh.cz',
     gradient: 'from-emerald-500 to-teal-600',
   },
   {
@@ -22,7 +22,7 @@ const apps = [
     title: 'Portfolio',
     description: 'Showcase of projects and achievements',
     icon: Layers,
-    url: 'https://portfolio.aznoh.com',
+    url: 'https://portfolio.aznoh.cz',
     gradient: 'from-orange-500 to-rose-600',
   },
   {
@@ -30,7 +30,7 @@ const apps = [
     title: 'DevHub',
     description: 'Developer tools and resources',
     icon: Globe,
-    url: 'https://devhub.aznoh.com',
+    url: 'https://devhub.aznoh.cz',
     gradient: 'from-indigo-500 to-purple-600',
   },
 ]

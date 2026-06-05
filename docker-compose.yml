@@ -10,6 +10,13 @@ services:
     volumes:
       - ./backend/docs:/app/docs
 
+  metaport-frontend:
+    build: ./frontend
+    container_name: metaport-frontend
+    restart: unless-stopped
+    expose:
+      - "85"
+
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: metaport-cloudflared
