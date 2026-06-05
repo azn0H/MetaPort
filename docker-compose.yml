@@ -5,14 +5,17 @@ services:
     restart: unless-stopped
     expose:
       - "8025"
+    env_file:
+      - ./backend/.env
     volumes:
       - ./backend/docs:/app/docs
-      - ./backend/.env:/app/.env
 
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: metaport-cloudflared
     restart: unless-stopped
     command: tunnel run
+    env_file:
+      - ./backend/.env
     environment:
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
