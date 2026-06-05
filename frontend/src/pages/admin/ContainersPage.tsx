@@ -1,33 +1,71 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Box, Play, Square, RefreshCw, MoreVertical } from 'lucide-react'
 
 interface Container {
   id: string
   name: string
   image: string
-  status: 'running' | 'stopped' | 'restarting'
+  status: string
   ports: string
   created: string
 }
 
-const initialContainers: Container[] = [
-  { id: 'c1a2b3', name: 'nginx-proxy', image: 'nginx:latest', status: 'running', ports: '80:80, 443:443', created: '2 days ago' },
-  { id: 'd4e5f6', name: 'postgres-db', image: 'postgres:15', status: 'running', ports: '5432:5432', created: '5 days ago' },
-  { id: 'g7h8i9', name: 'redis-cache', image: 'redis:alpine', status: 'running', ports: '6379:6379', created: '1 week ago' },
-  { id: 'j1k2l3', name: 'api-server', image: 'node:18-alpine', status: 'stopped', ports: '3000:3000', created: '3 days ago' },
-  { id: 'm4n5o6', name: 'monitoring', image: 'grafana/grafana', status: 'running', ports: '3001:3000', created: '1 day ago' },
-  { id: 'p7q8r9', name: 'backup-service', image: 'restic/restic', status: 'stopped', ports: '-', created: '2 weeks ago' },
-]
+const API_URL = 'https://api-metaport.aznoh.cz/api/v1/containers'
 
 function ContainersPage() {
-  const [containers, setContainers] = useState<Container[]>(initialContainers)
+  const [containers, setContainers] = useState<Container[]>([])
   const [filter, setFilter] = useState<'all' | 'running' | 'stopped'>('all')
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetchContainers()
+  }, [])
+
+  const fetchContainers = async () => {
+    try {
+      const token = localStorage.getItem('jwt_token')
+      const response = await fetch(API_URL, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) throw new Error('Nepodařilo se načíst kontejnery')
+
+      const data = await response.json()
+      setContainers(data)
+    } catch (err) {
+      setError('Nelze se spojit s API pro načtení kontejnerů.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleAction = async (id: string, action: 'start' | 'stop' | 'restart') => {
+    try {
+      const token = localStorage.getItem('jwt_token')
+      const response = await fetch(`${API_URL}/${id}/${action}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        await fetchContainers()
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'running':
         return 'bg-emerald-500'
       case 'stopped':
+      case 'exited':
         return 'bg-rose-500'
       case 'restarting':
         return 'bg-amber-500'
@@ -37,10 +75,11 @@ function ContainersPage() {
   }
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'running':
         return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
       case 'stopped':
+      case 'exited':
         return 'bg-rose-500/10 text-rose-400 border-rose-500/30'
       case 'restarting':
         return 'bg-amber-500/10 text-amber-400 border-amber-500/30'
@@ -49,23 +88,20 @@ function ContainersPage() {
     }
   }
 
-  const toggleContainer = (id: string) => {
-    setContainers((prev) =>
-      prev.map((c) =>
-        c.id === id
-          ? { ...c, status: c.status === 'running' ? 'stopped' : 'running' }
-          : c
-      )
-    )
-  }
-
   const filteredContainers = containers.filter((c) => {
     if (filter === 'all') return true
-    return c.status === filter
+    const status = c.status.toLowerCase()
+    if (filter === 'running') return status === 'running'
+    if (filter === 'stopped') return status === 'stopped' || status === 'exited'
+    return true
   })
 
-  const runningCount = containers.filter((c) => c.status === 'running').length
-  const stoppedCount = containers.filter((c) => c.status === 'stopped').length
+  const runningCount = containers.filter((c) => c.status.toLowerCase() === 'running').length
+  const stoppedCount = containers.filter((c) => c.status.toLowerCase() === 'stopped' || c.status.toLowerCase() === 'exited').length
+
+  if (isLoading) {
+    return <div className="text-slate-400">Načítání kontejnerů z Raspberry Pi...</div>
+  }
 
   return (
     <div className="space-y-6">
@@ -89,6 +125,12 @@ function ContainersPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-lg p-4">
+          {error}
+        </div>
+      )}
 
       <div className="flex gap-2">
         {(['all', 'running', 'stopped'] as const).map((f) => (
@@ -122,7 +164,7 @@ function ContainersPage() {
                 </div>
                 <div>
                   <h3 className="text-white font-medium">{container.name}</h3>
-                  <p className="text-slate-500 text-xs">{container.id}</p>
+                  <p className="text-slate-500 text-xs">{container.id.substring(0, 12)}</p>
                 </div>
               </div>
               <button className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors">
@@ -133,11 +175,11 @@ function ContainersPage() {
             <div className="space-y-2 mb-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500">Image</span>
-                <span className="text-slate-300 font-mono text-xs">{container.image}</span>
+                <span className="text-slate-300 font-mono text-xs truncate max-w-[150px]" title={container.image}>{container.image}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500">Ports</span>
-                <span className="text-slate-300 font-mono text-xs">{container.ports}</span>
+                <span className="text-slate-300 font-mono text-xs truncate max-w-[150px]" title={container.ports}>{container.ports || '-'}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500">Created</span>
@@ -152,21 +194,22 @@ function ContainersPage() {
 
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => toggleContainer(container.id)}
+                  onClick={() => handleAction(container.id, container.status.toLowerCase() === 'running' ? 'stop' : 'start')}
                   className={`p-2 rounded-lg transition-colors ${
-                    container.status === 'running'
+                    container.status.toLowerCase() === 'running'
                       ? 'text-rose-400 hover:bg-rose-500/10'
                       : 'text-emerald-400 hover:bg-emerald-500/10'
                   }`}
-                  title={container.status === 'running' ? 'Stop' : 'Start'}
+                  title={container.status.toLowerCase() === 'running' ? 'Stop' : 'Start'}
                 >
-                  {container.status === 'running' ? (
+                  {container.status.toLowerCase() === 'running' ? (
                     <Square className="w-4 h-4" />
                   ) : (
                     <Play className="w-4 h-4" />
                   )}
                 </button>
                 <button
+                  onClick={() => handleAction(container.id, 'restart')}
                   className="p-2 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
                   title="Restart"
                 >
