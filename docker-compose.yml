@@ -11,7 +11,7 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: cloudflared
+    container_name: metaport-cloudflared
     restart: unless-stopped
     command: tunnel run
     environment:
