@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Cpu, HardDrive, Thermometer, Clock, Globe, Zap } from 'lucide-react'
+import { Cpu, HardDrive, Thermometer, Clock } from 'lucide-react'
 
 interface MetricCardProps {
   title: string
