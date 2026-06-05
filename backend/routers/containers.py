@@ -10,9 +10,10 @@ load_dotenv()
 
 router = APIRouter(prefix="/api/v1/containers", tags=["Kontejnery"])
 
-PORTAINER_URL = os.getenv("PORTAINER_URL")
+# Ujistíme se, že URL nekončí lomítkem
+PORTAINER_URL = os.getenv("PORTAINER_URL", "").rstrip("/")
 PORTAINER_API_KEY = os.getenv("PORTAINER_API_KEY")
-ENDPOINT_ID = int(os.getenv("PORTAINER_ENDPOINT_ID"))
+ENDPOINT_ID = os.getenv("PORTAINER_ENDPOINT_ID", "1")
 
 class ContainerSummary(BaseModel):
     id: str
@@ -27,11 +28,17 @@ async def get_containers(current_user: str = Depends(get_current_user)):
     url = f"{PORTAINER_URL}/endpoints/{ENDPOINT_ID}/docker/containers/json?all=true"
     headers = {"X-API-Key": PORTAINER_API_KEY}
     
-    async with httpx.AsyncClient() as client:
+    print(f"DEBUG: Volám Portainer API na adrese: {url}")
+    
+    async with httpx.AsyncClient(verify=False) as client:
         try:
             response = await client.get(url, headers=headers, timeout=10.0)
+            print(f"DEBUG: Portainer vrátil status kód: {response.status_code}")
+            
             if response.status_code != 200:
-                raise HTTPException(status_code=500, detail="Portainer API Error")
+                print(f"DEBUG: Tělo chyby z Portaineru: {response.text}")
+                # Pošleme detailní chybu i na frontend
+                raise HTTPException(status_code=500, detail=f"Portainer zamítl přístup (Kód {response.status_code}): {response.text}")
             
             containers = response.json()
             result = []
@@ -56,5 +63,6 @@ async def get_containers(current_user: str = Depends(get_current_user)):
                     )
                 )
             return result
-        except httpx.RequestError:
-            raise HTTPException(status_code=503, detail="Portainer unreachable")
+        except httpx.RequestError as e:
+            print(f"DEBUG: Spojení selhalo úplně: {str(e)}")
+            raise HTTPException(status_code=503, detail=f"Nelze se spojit s Portainerem: {str(e)}")
