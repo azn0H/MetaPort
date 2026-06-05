@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Box, FolderGit2, FileText, LogOut, Activity, Menu, X } from 'lucide-react'
-import MetafraLogo from '@/icons/Metafra_text-cs.svg'
+import MetafraLogo from '@/icons/Metafra_bez_text.svg'
+import { Link } from 'react-router-dom'
 
 const navItems = [
   { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -34,11 +35,19 @@ function AdminLayout() {
         fixed lg:static inset-y-0 left-0 z-30 w-64 bg-slate-900/90 border-r border-slate-800 flex flex-col backdrop-blur-md transition-transform duration-300
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-          <div className="w-32">
-            <img src={MetafraLogo} alt="Metafra Logo" className="w-32 h-auto" />
-          </div>
-          <button onClick={closeSidebar} className="lg:hidden text-slate-400">
+        <div className=" border-b border-slate-800 flex items-center justify-between h-20">
+          <Link to="/admin" className="flex items-center h-full px-2 hover:opacity-80 transition-opacity">
+            <img 
+              src={MetafraLogo} 
+              alt="Metafra Logo" 
+              className="w-50 h-auto object-contain ml-2" 
+            />
+          </Link>
+          
+          <button 
+            onClick={closeSidebar} 
+            className="lg:hidden p-2 text-slate-400 hover:text-white transition-colors"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -93,10 +102,6 @@ function AdminLayout() {
               <Activity className="w-4 h-4" />
               <span className="hidden sm:inline">System Status</span>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-sm text-emerald-400">By aznoh.cz</span>
           </div>
         </header>
 

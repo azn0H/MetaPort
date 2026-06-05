@@ -1,10 +1,12 @@
 import { Book, Globe, Layers, PenTool } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import MetafraLogo from '@/icons/Metafra_bez_text.svg'
 
 const apps = [
   {
     id: 1,
     title: 'TaskApp',
-    description: 'Task management and productivity platform',
+    description: 'Task management and collaboration platform',
     icon: Book,
     url: 'https://taskapp.aznoh.cz',
     gradient: 'from-cyan-500 to-blue-600',
@@ -19,27 +21,27 @@ const apps = [
   },
   {
     id: 3,
-    title: 'Portfolio',
-    description: 'Showcase of projects and achievements',
+    title: 'QRco',
+    description: 'QR code generator and management',
     icon: Layers,
-    url: 'https://portfolio.aznoh.cz',
+    url: 'https://qrco.aznoh.cz',
     gradient: 'from-orange-500 to-rose-600',
   },
   {
     id: 4,
     title: 'MetaPort',
-    description: 'Developer tools and resources',
+    description: 'Raspberry Pi management dashboard',
     icon: Globe,
     url: 'https://metaport.aznoh.cz/admin',
     gradient: 'from-indigo-500 to-purple-600',
   },
     {
     id: 5,
-    title: 'DevHub',
-    description: 'Developer tools and resources',
+    title: 'Password Generator',
+    description: 'Secure password generation',
     icon: Globe,
-    url: 'https://devhub.aznoh.cz',
-    gradient: 'from-indigo-500 to-purple-600',
+    url: 'https://password.aznoh.cz',
+    gradient: 'from-cyan-500 to-yellow-600',
   },
 ]
 
@@ -48,11 +50,13 @@ function HomePage() {
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
       <div className="w-full max-w-4xl">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
-            MetaPort
-          </h1>
+            <img 
+              src={MetafraLogo} 
+              alt="MetaPort" 
+              className="h-16 md:h-30 w-auto mx-auto mb-4" 
+            />
           <p className="text-slate-400 text-lg">
-            Your gateway to all applications
+            MetaPort - Rozcestník a Raspberry Pi management dashboard
           </p>
         </div>
 
@@ -108,7 +112,7 @@ function HomePage() {
 
         <div className="mt-12 text-center">
           <p className="text-slate-600 text-sm">
-            MetaPort v1.0
+            MetaPort v1.0 &copy; {new Date().getFullYear()} aznoH.cz
           </p>
         </div>
       </div>

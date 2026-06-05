@@ -50,7 +50,7 @@ function CircularProgress({ value, label }: { value: number; label: string }) {
           <circle cx="64" cy="64" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-slate-800" />
           <circle 
             cx="64" cy="64" r="45" fill="none" 
-            stroke="currentColor" // Změněno na currentColor, aby fungovaly Tailwind třídy
+            stroke="currentColor"
             strokeWidth="8" strokeLinecap="round" 
             strokeDasharray={circumference} 
             strokeDashoffset={strokeDashoffset} 
@@ -88,10 +88,70 @@ export default function DashboardPage() {
     return () => clearInterval(interval)
   }, [])
 
-  if (!data) return <div className="text-slate-400 p-8">Načítání metrik systému...</div>
+  // SKELETON LOADING
+  if (!data) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <div className="w-40 h-8 bg-slate-800/50 rounded-lg animate-pulse mb-2" />
+        </div>
+
+        {/* Top 4 Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm">
+              <div className="flex items-start justify-between mb-4 animate-pulse">
+                <div className="w-12 h-12 rounded-xl bg-slate-800" />
+                <div className="w-16 h-5 bg-slate-800 rounded" />
+              </div>
+              <div className="w-24 h-4 bg-slate-800 rounded mb-3 animate-pulse" />
+              <div className="h-2 bg-slate-800 rounded-full w-full animate-pulse" />
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom 2 Cards Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Circular Progress Skeleton */}
+          <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm">
+            <div className="w-32 h-6 bg-slate-800 rounded mb-6 animate-pulse" />
+            <div className="flex justify-around animate-pulse">
+              <div className="flex flex-col items-center">
+                <div className="w-32 h-32 rounded-full border-8 border-slate-800" />
+                <div className="w-24 h-4 bg-slate-800 rounded mt-2" />
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="w-32 h-32 rounded-full border-8 border-slate-800" />
+                <div className="w-24 h-4 bg-slate-800 rounded mt-2" />
+              </div>
+            </div>
+          </div>
+
+          {/* System Info Skeleton */}
+          <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm">
+            <div className="w-32 h-6 bg-slate-800 rounded mb-6 animate-pulse" />
+            <div className="space-y-1">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center justify-between py-3 border-b border-slate-800 last:border-0 animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-slate-800" />
+                    <div className="w-20 h-4 bg-slate-800 rounded" />
+                  </div>
+                  <div className="w-32 h-4 bg-slate-800 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const ramPercent = data.ram_total > 0 ? (data.ram_used / data.ram_total) * 100 : 0;
   const diskPercent = data.disk_percent || 0;
+
+  const ramUsedPercent = data.ram_total > 0 ? Math.round((data.ram_used / data.ram_total) * 100) : 0;
+  const ramColor = getProgressColor(ramUsedPercent);
 
   return (
     <div className="space-y-6">
@@ -102,7 +162,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard title="Teplota CPU" value={data.temp} unit="°C" icon={Thermometer} color={getProgressColor(data.temp)} gradient="from-rose-500 to-pink-600" />
         <MetricCard title="Volné místo" value={data.disk_free_gb} unit=" GB" icon={HardDrive} color="text-orange-400" gradient="from-orange-500 to-rose-600" />
-        <MetricCard title="RAM Využito" value={data.ram_used} unit=" MB" icon={Cpu} color="text-emerald-400" gradient="from-emerald-500 to-teal-600" />
+        <MetricCard title="RAM Využito" value={data.ram_used} unit="Mb" icon={Cpu} color={ramColor} gradient="from-emerald-500 to-teal-600" />
         <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 flex flex-col justify-center items-center">
           <h3 className="text-slate-400 text-sm mb-2">Minecraft Server</h3>
           <span className={`text-xl font-bold ${data.mc_status?.includes("ONLINE") ? "text-emerald-400" : "text-rose-500"}`}>
