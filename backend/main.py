@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, projects, containers, hardware, docs
+from routers import auth, projects, containers, hardware, docs, system
 
 app = FastAPI(title="MetaPort API", version="1.0.0")
 
@@ -21,3 +21,4 @@ app.include_router(projects.router)
 app.include_router(containers.router)
 app.include_router(hardware.router)
 app.include_router(docs.router)
+app.include_router(system.router)
