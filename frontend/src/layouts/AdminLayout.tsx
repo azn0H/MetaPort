@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Box, FolderGit2, FileText, LogOut, Activity, Menu, X } from 'lucide-react'
-import MetafraLogo from '@/icons/Metafra_text_cs.svg'
+import MetafraLogo from '@/icons/Metafra_text-cs.svg'
 
 const navItems = [
   { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
