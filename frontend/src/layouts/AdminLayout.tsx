@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Box, FolderGit2, FileText, LogOut, Activity, Menu, X } from 'lucide-react'
+import MetafraLogo from '@/icons/Metafra_text_cs.svg'
 
 const navItems = [
   { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -37,9 +38,8 @@ function AdminLayout() {
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-white">Metafra</h1>
-            <p className="text-slate-500 text-sm mt-1">Admin Panel</p>
+          <div className="w-32"> {/* Nastav šířku podle potřeby */}
+            <img src={MetafraLogo} alt="Metafra Logo" className="w-32 h-auto" />
           </div>
           <button onClick={closeSidebar} className="lg:hidden text-slate-400">
             <X className="w-6 h-6" />
