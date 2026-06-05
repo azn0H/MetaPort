@@ -3,10 +3,11 @@ services:
     build: ./backend
     container_name: metaport-backend
     restart: unless-stopped
-    # Port už nemusíš mapovat na hostitele (host:container), 
-    # protože tunel bude komunikovat přímo přes Docker síť
     expose:
       - "8025"
+    volumes:
+      - ./backend/docs:/app/docs
+      - ./backend/.env:/app/.env
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -14,4 +15,4 @@ services:
     restart: unless-stopped
     command: tunnel run
     environment:
-      - TUNNEL_TOKEN=TVUJ_TAJNY_TOKEN_Z_CLOUDFLARE
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
