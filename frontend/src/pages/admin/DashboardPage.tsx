@@ -113,10 +113,10 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm">
-          <h2 className="text-lg font-semibold text-white mb-6">Resource Usage</h2>
+          <h2 className="text-lg font-semibold text-white mb-6">Využití</h2>
           <div className="flex justify-around">
-            <CircularProgress value={ramPercent} label="RAM Usage" />
-            <CircularProgress value={diskPercent} label="Disk Usage" />
+            <CircularProgress value={ramPercent} label="využití RAM" />
+            <CircularProgress value={diskPercent} label="využití disku" />
           </div>
         </div>
 
