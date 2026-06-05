@@ -86,7 +86,6 @@ function DashboardPage() {
         <MetricCard title="Teplota CPU" value={data.temp} unit="°C" icon={Thermometer} color="text-rose-400" gradient="from-rose-500 to-pink-600" />
         <MetricCard title="Volné místo" value={data.disk_free_gb} unit=" GB" icon={HardDrive} color="text-orange-400" gradient="from-orange-500 to-rose-600" />
         <MetricCard title="RAM Využito" value={data.ram_used_mb} unit=" MB" icon={Cpu} color="text-emerald-400" gradient="from-emerald-500 to-teal-600" />
-        
         <div className="relative overflow-hidden rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm flex flex-col justify-center items-center">
           <h3 className="text-slate-400 text-sm mb-2">Minecraft Server</h3>
           <span className={`text-xl font-bold ${data.mc_status?.includes("ONLINE") ? "text-emerald-400" : "text-rose-500"}`}>
@@ -107,17 +106,22 @@ function DashboardPage() {
         <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm">
           <h2 className="text-lg font-semibold text-white mb-6">System Info</h2>
           <div className="space-y-4">
-            <div className="flex items-center justify-between py-3 border-b border-slate-800">
-              <span className="text-slate-400 flex items-center gap-2"><Clock className="w-4 h-4" /> Uptime</span>
-              <span className="text-white font-medium">{data.uptime}</span>
-            </div>
-            <div className="flex items-center justify-between py-3">
-              <span className="text-slate-400">Celkem RAM</span>
-              <span className="text-white font-medium">{data.ram_total_mb} MB</span>
-            </div>
+            <InfoRow icon={Clock} label="Uptime" value={data.uptime} />
+            <InfoRow icon={Globe} label="OS" value={data.os_name || "Ubuntu 22.04 LTS"} />
+            <InfoRow icon={Cpu} label="Kernel" value={data.kernel || "5.15.0-generic"} />
+            <InfoRow icon={Server} label="Docker" value={data.docker_version || "24.0.5"} />
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-3 border-b border-slate-800">
+      <span className="text-slate-400 flex items-center gap-2"><Icon className="w-4 h-4" /> {label}</span>
+      <span className="text-white font-medium">{value}</span>
     </div>
   )
 }

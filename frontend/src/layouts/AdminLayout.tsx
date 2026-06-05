@@ -2,10 +2,10 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Box, FolderGit2, FileText, LogOut, Activity } from 'lucide-react'
 
 const navItems = [
-  { path: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { path: '/admin/containers', label: 'Containers', icon: Box },
-  { path: '/admin/projects', label: 'Projects', icon: FolderGit2 },
-  { path: '/admin/docs', label: 'Documentation', icon: FileText },
+  { path: '/admin/dashboard', label: 'Dashboard ', icon: LayoutDashboard },
+  { path: '/admin/containers', label: 'Kontejnery', icon: Box },
+  { path: '/admin/projects', label: 'Projekty', icon: FolderGit2 },
+  { path: '/admin/docs', label: 'Dokumentace', icon: FileText },
 ]
 
 function AdminLayout() {
