@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Box, Play, Square, RefreshCw, MoreVertical } from 'lucide-react'
+import { Box, Play, Square, RefreshCw, MoreVertical, Layers } from 'lucide-react'
 
 interface Container {
   id: string
@@ -8,13 +8,15 @@ interface Container {
   status: string
   ports: string
   created: string
+  stack: string
 }
 
 const API_URL = 'https://api-metaport.aznoh.cz/api/v1/containers'
 
 function ContainersPage() {
   const [containers, setContainers] = useState<Container[]>([])
-  const [filter, setFilter] = useState<'all' | 'running' | 'stopped'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'running' | 'stopped'>('all')
+  const [stackFilter, setStackFilter] = useState<string>('all')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -88,16 +90,19 @@ function ContainersPage() {
     }
   }
 
+  const uniqueStacks = Array.from(new Set(containers.map((c) => c.stack))).sort()
+
   const filteredContainers = containers.filter((c) => {
-    if (filter === 'all') return true
-    const status = c.status.toLowerCase()
-    if (filter === 'running') return status === 'running'
-    if (filter === 'stopped') return status === 'stopped' || status === 'exited'
-    return true
+    const passStatus = statusFilter === 'all' || 
+      (statusFilter === 'running' ? c.status.toLowerCase() === 'running' : ['stopped', 'exited'].includes(c.status.toLowerCase()))
+    
+    const passStack = stackFilter === 'all' || c.stack === stackFilter
+
+    return passStatus && passStack
   })
 
   const runningCount = containers.filter((c) => c.status.toLowerCase() === 'running').length
-  const stoppedCount = containers.filter((c) => c.status.toLowerCase() === 'stopped' || c.status.toLowerCase() === 'exited').length
+  const stoppedCount = containers.filter((c) => ['stopped', 'exited'].includes(c.status.toLowerCase())).length
 
   if (isLoading) {
     return <div className="text-slate-400">Načítání kontejnerů z Raspberry Pi...</div>
@@ -132,20 +137,38 @@ function ContainersPage() {
         </div>
       )}
 
-      <div className="flex gap-2">
-        {(['all', 'running', 'stopped'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              filter === f
-                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent'
-            }`}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex gap-2">
+          {(['all', 'running', 'stopped'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setStatusFilter(f)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                statusFilter === f
+                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent'
+              }`}
+            >
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Layers className="w-4 h-4 text-slate-500" />
+          <select
+            value={stackFilter}
+            onChange={(e) => setStackFilter(e.target.value)}
+            className="bg-slate-900/50 border border-slate-700 text-slate-300 text-sm rounded-lg py-2 pl-3 pr-8 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 appearance-none"
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </button>
-        ))}
+            <option value="all">All Stacks</option>
+            {uniqueStacks.map((stack) => (
+              <option key={stack} value={stack}>
+                {stack}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -164,7 +187,10 @@ function ContainersPage() {
                 </div>
                 <div>
                   <h3 className="text-white font-medium">{container.name}</h3>
-                  <p className="text-slate-500 text-xs">{container.id.substring(0, 12)}</p>
+                  <p className="text-slate-500 text-xs flex items-center gap-1 mt-0.5">
+                    <Layers className="w-3 h-3" />
+                    {container.stack}
+                  </p>
                 </div>
               </div>
               <button className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors">
