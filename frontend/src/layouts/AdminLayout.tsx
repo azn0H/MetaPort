@@ -19,12 +19,10 @@ function AdminLayout() {
     navigate('/')
   }
 
-  // Pomocná funkce pro zavření menu po kliknutí na odkaz (jen na mobilu)
   const closeSidebar = () => setIsSidebarOpen(false)
 
   return (
     <div className="min-h-screen bg-slate-950 flex">
-      {/* Overlay pro mobilní menu */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-20 lg:hidden" 
@@ -32,13 +30,12 @@ function AdminLayout() {
         />
       )}
 
-      {/* Sidebar - na mobilu fixní/vysouvací, na desktopu pevný */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-30 w-64 bg-slate-900/90 border-r border-slate-800 flex flex-col backdrop-blur-md transition-transform duration-300
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-          <div className="w-32"> {/* Nastav šířku podle potřeby */}
+          <div className="w-32">
             <img src={MetafraLogo} alt="Metafra Logo" className="w-32 h-auto" />
           </div>
           <button onClick={closeSidebar} className="lg:hidden text-slate-400">
@@ -83,7 +80,6 @@ function AdminLayout() {
         </div>
       </aside>
 
-      {/* Hlavní obsah */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 bg-slate-900/30 border-b border-slate-800 flex items-center justify-between px-4 lg:px-6 backdrop-blur-sm">
           <div className="flex items-center gap-4">
