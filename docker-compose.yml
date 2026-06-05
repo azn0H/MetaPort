@@ -9,6 +9,7 @@ services:
       - ./backend/.env
     volumes:
       - ./backend/docs:/app/docs
+      - /var/run/docker.sock:/var/run/docker.sock
 
   metaport-frontend:
     build: ./frontend
