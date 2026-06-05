@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  metaport-backend:
+    build: ./backend
+    container_name: metaport-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/docs:/app/docs
+      - ./backend/.env:/app/.env
