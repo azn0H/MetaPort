@@ -25,26 +25,22 @@ class SystemStatus(BaseModel):
 
 @router.get("/status", response_model=SystemStatus)
 def get_system_status():
-    # 1. Teplota
+
     with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
         temp = round(int(f.read()) / 1000, 1)
 
-    # 2. RAM
     with open("/proc/meminfo", "r") as f:
         lines = f.readlines()
         total = int(lines[0].split()[1]) // 1024
         avail = int(lines[2].split()[1]) // 1024
         used = total - avail
     
-    # 3. CPU Load
     with open("/proc/loadavg", "r") as f:
         load = f.read().split()[0]
 
-    # 4. CPU Freq
     with open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", "r") as f:
         freq = int(f.read()) // 1000
 
-    # 5. Ping (Google DNS)
     try:
         start = time.time()
         socket.create_connection(("8.8.8.8", 53), timeout=0.5).close()
@@ -52,17 +48,14 @@ def get_system_status():
     except:
         ping = "Timeout"
 
-    # 6. Kernel
     with open("/proc/version", "r") as f:
         kernel = f.read().split()[2]
 
-    # 7. Disk
     st = os.statvfs("/")
     free = round((st.f_bavail * st.f_frsize) / 1024**3, 1)
     total_disk = round((st.f_blocks * st.f_frsize) / 1024**3, 1)
     disk_p = int(((total_disk - free) / total_disk) * 100)
 
-    # 8. Uptime
     with open("/proc/uptime", "r") as f:
         sec = int(float(f.readline().split()[0]))
         d, s = divmod(sec, 86400)
@@ -70,7 +63,6 @@ def get_system_status():
         m, s = divmod(s, 60)
         uptime = f"{d} dní, {h} hod, {m} min"
 
-    # 9. Minecraft
     try:
         socket.create_connection(("192.168.0.5", 25565), timeout=0.1).close()
         mc = "ONLINE"
@@ -84,8 +76,8 @@ def get_system_status():
         "ping": ping,
         "temp": temp,
         "ram_used": used,
-        "ram_used_mb": int(used),
-        "ram_total_mb": int(total),
+        "ram_total": total,
+        "ram_percent": int((used / total) * 100),
         "cpu_load": load,
         "disk_percent": disk_p,
         "disk_free_gb": free,
