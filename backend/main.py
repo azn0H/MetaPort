@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from routers import auth, projects, containers, hardware, docs, system
+from routers import auth, projects, containers, hardware, docs, system, github
 
 class CORSMiddlewareFixed(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -32,3 +32,4 @@ app.include_router(containers.router)
 app.include_router(hardware.router)
 app.include_router(docs.router)
 app.include_router(system.router)
+app.include_router(github.router)

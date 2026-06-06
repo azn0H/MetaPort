@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Box, FolderGit2, FileText, LogOut, Activity, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Box, FolderGit2, FileText, LogOut, Activity, Menu, X, Settings } from 'lucide-react'
 import MetafraLogo from '@/icons/Metafra_bez_text.svg'
 import { Link } from 'react-router-dom'
 
@@ -9,6 +9,7 @@ const navItems = [
   { path: '/admin/containers', label: 'Kontejnery', icon: Box },
   { path: '/admin/projects', label: 'Projekty', icon: FolderGit2 },
   { path: '/admin/docs', label: 'Dokumentace', icon: FileText },
+  { path: '/admin/settings', label: 'Nastavení', icon: Settings },
 ]
 
 function AdminLayout() {

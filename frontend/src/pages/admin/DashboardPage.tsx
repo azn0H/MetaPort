@@ -16,7 +16,9 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
   )
 }
 
-function MetricCard({ title, value, unit, icon: Icon, color, gradient }: any) {
+function MetricCard({ title, value, unit, icon: Icon, color, gradient, percent }: any) {
+  const progressWidth = percent !== undefined ? percent : value;
+
   return (
     <div className="relative overflow-hidden rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm">
       <div className="flex items-start justify-between mb-4">
@@ -26,11 +28,11 @@ function MetricCard({ title, value, unit, icon: Icon, color, gradient }: any) {
         <span className={`text-sm font-medium ${color}`}>{value}{unit}</span>
       </div>
       <h3 className="text-slate-400 text-sm mb-3">{title}</h3>
-      {typeof value === 'number' && (
+      {typeof progressWidth === 'number' && (
         <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
           <div
             className={`h-full bg-gradient-to-r ${gradient} transition-all duration-500 rounded-full`}
-            style={{ width: `${Math.min(value, 100)}%` }}
+            style={{ width: `${Math.min(Math.max(progressWidth, 0), 100)}%` }}
           />
         </div>
       )}
@@ -69,7 +71,6 @@ function CircularProgress({ value, label }: { value: number; label: string }) {
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null)
   
-  // Stavy pro napájení
   const [powerCountdown, setPowerCountdown] = useState<number | null>(null)
   const [powerActionText, setPowerActionText] = useState('')
 
@@ -92,7 +93,6 @@ export default function DashboardPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Efekt pro odpočet
   useEffect(() => {
     if (powerCountdown !== null && powerCountdown > 0) {
       const timer = setTimeout(() => setPowerCountdown(powerCountdown - 1), 1000)
@@ -102,7 +102,6 @@ export default function DashboardPage() {
     }
   }, [powerCountdown, powerActionText])
 
-  // Akce napájení
   const handlePowerAction = async (action: 'reboot' | 'shutdown') => {
     const isReboot = action === 'reboot'
     const confirmMessage = isReboot 
@@ -119,13 +118,12 @@ export default function DashboardPage() {
       })
       
       setPowerActionText(isReboot ? 'Restartování serveru...' : 'Vypínání serveru...')
-      setPowerCountdown(isReboot ? 45 : 20) // 45s pro restart, 20s pro vypnutí
+      setPowerCountdown(isReboot ? 45 : 20)
     } catch (err) {
       console.error("Chyba při odesílání příkazu:", err)
     }
   }
 
-  // Překryvná obrazovka během restartu/vypínání
   if (powerCountdown !== null) {
     return (
       <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-50">
@@ -140,7 +138,6 @@ export default function DashboardPage() {
     )
   }
 
-  // SKELETON LOADING
   if (!data) {
     return (
       <div className="space-y-6">
@@ -200,6 +197,13 @@ export default function DashboardPage() {
   const ramUsedPercent = data.ram_total > 0 ? Math.round((data.ram_used / data.ram_total) * 100) : 0;
   const ramColor = getProgressColor(ramUsedPercent);
 
+  const diskColor = getProgressColor(diskPercent);
+  const diskGradient = diskPercent >= 90 
+    ? "from-rose-500 to-pink-600" 
+    : diskPercent >= 70 
+    ? "from-amber-500 to-orange-500" 
+    : "from-emerald-500 to-teal-600";
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -207,7 +211,6 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-white mb-2">Dashboard</h1>
         </div>
         
-        {/* Tlačítka napájení */}
         <div className="flex gap-3">
           <button 
             onClick={() => handlePowerAction('reboot')}
@@ -227,9 +230,9 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard title="Teplota CPU" value={data.temp} unit="°C" icon={Thermometer} color={getProgressColor(data.temp)} gradient="from-rose-500 to-pink-600" />
-        <MetricCard title="Volné místo" value={data.disk_free_gb} unit=" GB" icon={HardDrive} color="text-orange-400" gradient="from-orange-500 to-rose-600" />
-        <MetricCard title="RAM Využito" value={data.ram_used} unit=" MB" icon={Cpu} color={ramColor} gradient="from-emerald-500 to-teal-600" />
+        <MetricCard title="Teplota CPU" value={data.temp} unit="°C" icon={Thermometer} color={getProgressColor(data.temp)} gradient="from-rose-500 to-pink-600" percent={data.temp} />
+        <MetricCard title="Volné místo" value={data.disk_free_gb} unit=" GB" icon={HardDrive} color={diskColor} gradient={diskGradient} percent={diskPercent} />
+        <MetricCard title="RAM Využito" value={data.ram_used} unit=" MB" icon={Cpu} color={ramColor} gradient="from-emerald-500 to-teal-600" percent={ramUsedPercent} />
         <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 flex flex-col justify-center items-center">
           <h3 className="text-slate-400 text-sm mb-2">Minecraft Server</h3>
           <span className={`text-xl font-bold ${data.mc_status?.includes("ONLINE") ? "text-emerald-400" : "text-rose-500"}`}>

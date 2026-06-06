@@ -1,26 +1,84 @@
+import { useState, useEffect } from 'react'
 import { FolderGit2, GitBranch, Clock, ExternalLink } from 'lucide-react'
 
-const projects = [
-  { id: 1, name: 'MetaPort', description: 'Application portal and management system', language: 'TypeScript', branch: 'main', lastUpdate: '2 hours ago', url: '#' },
-  { id: 2, name: 'Bookiva API', description: 'Backend services for Bookiva platform', language: 'Python', branch: 'develop', lastUpdate: '1 day ago', url: '#' },
-  { id: 3, name: 'Blog Frontend', description: 'Next.js blog application', language: 'TypeScript', branch: 'main', lastUpdate: '3 days ago', url: '#' },
-  { id: 4, name: 'Auth Service', description: 'Authentication microservice', language: 'Go', branch: 'main', lastUpdate: '1 week ago', url: '#' },
-]
+interface Project {
+  id: number
+  name: string
+  description: string
+  language: string
+  branch: string
+  lastUpdate: string
+  url: string
+}
 
 const languageColors: Record<string, string> = {
   TypeScript: 'bg-blue-500',
   Python: 'bg-yellow-500',
   Go: 'bg-cyan-500',
   JavaScript: 'bg-amber-500',
+  HTML: 'bg-orange-500',
+  CSS: 'bg-indigo-500',
 }
 
-function ProjectsPage() {
+const API_URL = 'https://api-metaport.aznoh.cz/api/v1/projects'
+
+export default function ProjectsPage() {
+  const [projects, setProjects] = useState<Project[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const token = localStorage.getItem('jwt_token')
+        const response = await fetch(API_URL, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!response.ok) throw new Error('Nepodařilo se načíst projekty')
+
+        const data = await response.json()
+        setProjects(data)
+      } catch (err) {
+        setError('Nelze se spojit s API pro načtení projektů.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProjects()
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <div className="w-32 h-8 bg-slate-800/50 rounded-lg animate-pulse mb-2" />
+          <div className="w-64 h-5 bg-slate-800/50 rounded-lg animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-48 rounded-2xl bg-slate-900/50 border border-slate-800 p-6 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white mb-2">Projects</h1>
         <p className="text-slate-400">View and manage your Git repositories</p>
       </div>
+
+      {error && (
+        <div className="text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-lg p-4">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {projects.map((project) => (
@@ -43,6 +101,8 @@ function ProjectsPage() {
               </div>
               <a
                 href={project.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors opacity-0 group-hover:opacity-100"
               >
                 <ExternalLink className="w-4 h-4" />
@@ -67,5 +127,3 @@ function ProjectsPage() {
     </div>
   )
 }
-
-export default ProjectsPage
