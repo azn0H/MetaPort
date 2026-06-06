@@ -74,6 +74,9 @@ export default function DashboardPage() {
   const [powerCountdown, setPowerCountdown] = useState<number | null>(null)
   const [powerActionText, setPowerActionText] = useState('')
 
+  const userRole = localStorage.getItem('user_role') || 'admin'
+  const canControlPower = userRole === 'betteradmin' || userRole === 'superadmin'
+
   useEffect(() => {
     const fetchSystem = async () => {
       try {
@@ -106,7 +109,7 @@ export default function DashboardPage() {
     const isReboot = action === 'reboot'
     const confirmMessage = isReboot 
       ? 'Opravdu chceš restartovat Raspberry Pi?' 
-      : 'Opravdu chceš úplně vypnout Raspberry Pi? (Budeš ho muset zapnout fyzicky tlačítkem!)'
+      : 'Opravdu chceš úplně vypnout Raspberry Pi?'
 
     if (!window.confirm(confirmMessage)) return
 
@@ -206,32 +209,34 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-          <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl bg-[url('/grid.svg')] bg-center bg-cover flex flex-col md:flex-row justify-between items-center gap-6">
-          <div>
-            <h2 className="text-4xl font-bold text-white">Vítejte v administraci MetaPort</h2>
-          </div>
+      <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl bg-[url('/grid.svg')] bg-center bg-cover flex flex-col md:flex-row justify-between items-center gap-6">
+        <div>
+          <h2 className="text-4xl font-bold text-white">Vítejte v administraci MetaPort</h2>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white mb-2">Dashboard</h1>
-    </div>
+      </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white mb-2">Dashboard</h1>
+        </div>
         
-        <div className="flex gap-3">
-          <button 
-            onClick={() => handlePowerAction('reboot')}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-amber-500/20 text-slate-300 hover:text-amber-400 border border-slate-700 hover:border-amber-500/50 rounded-xl transition-all text-sm font-medium shadow-lg"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span className="hidden sm:inline">Restartovat</span>
-          </button>
-          <button 
-            onClick={() => handlePowerAction('shutdown')}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-slate-700 hover:border-rose-500/50 rounded-xl transition-all text-sm font-medium shadow-lg"
-          >
-            <Power className="w-4 h-4" />
-            <span className="hidden sm:inline">Vypnout</span>
-          </button>
-        </div>
+        {canControlPower && (
+          <div className="flex gap-3">
+            <button 
+              onClick={() => handlePowerAction('reboot')}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-amber-500/20 text-slate-300 hover:text-amber-400 border border-slate-700 hover:border-amber-500/50 rounded-xl transition-all text-sm font-medium shadow-lg"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span className="hidden sm:inline">Restartovat</span>
+            </button>
+            <button 
+              onClick={() => handlePowerAction('shutdown')}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-slate-700 hover:border-rose-500/50 rounded-xl transition-all text-sm font-medium shadow-lg"
+            >
+              <Power className="w-4 h-4" />
+              <span className="hidden sm:inline">Vypnout</span>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

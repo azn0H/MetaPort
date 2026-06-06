@@ -41,6 +41,7 @@ function LoginPage() {
 
       const data = await response.json()
       localStorage.setItem('jwt_token', data.access_token)
+      localStorage.setItem('user_role', data.role)
       navigate('/admin')
     } catch (err) {
       setError('Přihlášení se nezdařilo. Zkontrolujte jméno a heslo.')

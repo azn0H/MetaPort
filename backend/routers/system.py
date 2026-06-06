@@ -1,8 +1,9 @@
 import os
 import time
 import socket
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from .auth import require_roles, get_current_user
 
 router = APIRouter(prefix="/api/v1/system", tags=["System"])
 
@@ -24,7 +25,7 @@ class SystemStatus(BaseModel):
     mc_status: str
 
 @router.post("/reboot")
-def reboot_system():
+def reboot_system(current_user = Depends(require_roles(["betteradmin", "superadmin"]))):
     try:
         os.system("dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.Reboot boolean:true")
         return {"status": "rebooting"}
@@ -32,7 +33,7 @@ def reboot_system():
         return {"error": str(e)}
 
 @router.post("/shutdown")
-def shutdown_system():
+def shutdown_system(current_user = Depends(require_roles(["betteradmin", "superadmin"]))):
     try:
         os.system("dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.PowerOff boolean:true")
         return {"status": "shutting down"}
@@ -40,8 +41,7 @@ def shutdown_system():
         return {"error": str(e)}
 
 @router.get("/status", response_model=SystemStatus)
-def get_system_status():
-
+def get_system_status(current_user = Depends(get_current_user)):
     with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
         temp = round(int(f.read()) / 1000, 1)
 
