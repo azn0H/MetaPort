@@ -1,30 +1,54 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
+import os
+
 from routers import auth, projects, containers, hardware, docs, system, github
 
-class CORSMiddlewareFixed(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-        origin = request.headers.get("Origin")
-        if origin in ["http://localhost:5173", "http://localhost:5174", "https://metaport.aznoh.cz"]:
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Allow-Methods"] = "*"
-            response.headers["Access-Control-Allow-Headers"] = "*"
-        return response
+from database import engine, Base, SessionLocal, User
+from passlib.context import CryptContext
 
 app = FastAPI(title="MetaPort API", version="1.0.0")
 
+origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://metaport.aznoh.cz",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "https://metaport.aznoh.cz"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.add_middleware(CORSMiddlewareFixed)
+Base.metadata.create_all(bind=engine)
+
+def init_db():
+    db = SessionLocal()
+    admin_username = os.getenv("ADMIN_USERNAME", "admin")
+    
+    if not db.query(User).filter(User.username == admin_username).first():
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        admin_password = os.getenv("ADMIN_PASSWORD_HASH", "heslo123") 
+        
+        if not admin_password.startswith("$2b$"):
+            admin_password = pwd_context.hash(admin_password)
+
+        new_admin = User(
+            username=admin_username,
+            first_name="Hlavní",
+            last_name="Admin",
+            email="admin@metaport.local",
+            hashed_password=admin_password,
+            role="superadmin"
+        )
+        db.add(new_admin)
+        db.commit()
+    db.close()
+
+init_db()
 
 app.include_router(auth.router)
 app.include_router(projects.router)
