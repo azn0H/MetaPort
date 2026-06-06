@@ -1,4 +1,5 @@
 import os
+import string
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -61,6 +62,23 @@ async def get_containers(current_user: str = Depends(get_current_user)):
                     )
                 )
             return result
+        except httpx.RequestError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+
+@router.get("/{container_id}/logs")
+async def get_container_logs(container_id: str, current_user: str = Depends(get_current_user)):
+    url = f"{PORTAINER_URL}/endpoints/{ENDPOINT_ID}/docker/containers/{container_id}/logs?stdout=true&stderr=true&tail=100"
+    headers = {"X-API-Key": PORTAINER_API_KEY}
+    
+    async with httpx.AsyncClient(verify=False) as client:
+        try:
+            response = await client.get(url, headers=headers, timeout=10.0)
+            if response.status_code != 200:
+                raise HTTPException(status_code=response.status_code, detail="Chyba při načítání logů")
+            
+            clean_logs = "".join(filter(lambda x: x in string.printable, response.text))
+            
+            return {"logs": clean_logs}
         except httpx.RequestError as e:
             raise HTTPException(status_code=503, detail=str(e))
 
