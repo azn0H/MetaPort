@@ -9,7 +9,7 @@ import os
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 
-from ..database import User, get_db
+from database import User, get_db
 
 load_dotenv()
 
