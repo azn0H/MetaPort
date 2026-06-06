@@ -26,7 +26,6 @@ class ProjectSummary(BaseModel):
     api_url: Optional[str] = None
     docs_url: Optional[str] = None
 
-# Zde definuješ své specifické odkazy k repozitářům (klíč je název repozitáře na GitHubu)
 CUSTOM_LINKS = {
     "qrco": {
         "frontend_url": "https://qrco.aznoh.cz",
@@ -68,7 +67,6 @@ async def get_projects(current_user: str = Depends(get_current_user)):
             for repo in repos:
                 repo_name = repo["name"]
                 
-                # Zkusíme najít vlastní odkazy pro tento repozitář
                 custom = CUSTOM_LINKS.get(repo_name, {})
 
                 result.append(
