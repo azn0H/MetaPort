@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPi Command Center</title>
+    <style>
+        body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; padding: 20px; }
+        h1 { margin-bottom: 5px; font-weight: 300; letter-spacing: 2px; color: #fff; }
+        .subtitle { color: #666; font-size: 14px; margin-bottom: 30px; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto; }
+        
+        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; position: relative; }
+        .card:hover { border-color: #555; background: #252525; }
+        
+        .title { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: bold; }
+        .value { font-size: 32px; font-weight: 600; color: #fff; }
+        .unit { font-size: 14px; color: #aaa; font-weight: normal; }
+        
+        .progress-bg { background: #333; height: 6px; border-radius: 3px; margin-top: 15px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #2196F3; width: 0%; transition: width 0.5s ease; }
+        
+        .text-green { color: #4CAF50; }
+        .text-red { color: #F44336; }
+        .text-blue { color: #2196F3; }
+        .text-orange { color: #FF9800; }
+        .text-purple { color: #9C27B0; }
+        
+        .network-grid { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; color: #aaa; }
+        
+        .mc-status { font-size: 24px; margin-top: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>SERVER MONITOR</h1>
+    <div class="subtitle">
+        <span id="cpu-model">RPI 5</span> • Kernel: <span id="kernel">--</span>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="title">Minecraft Server</div>
+            <div class="mc-status" id="mc-status">--</div>
+            <div style="font-size: 12px; color: #666; margin-top: 5px;">Port 25565</div>
+        </div>
+
+        <div class="card">
+            <div class="title">Teplota CPU</div>
+            <div class="value" id="temp">--</div>
+            <div class="unit">°C</div>
+        </div>
+
+        <div class="card">
+            <div class="title">Rychlost CPU</div>
+            <div class="value"><span id="cpu-freq" class="text-orange">--</span></div>
+            <div class="unit">MHz</div>
+        </div>
+
+        <div class="card">
+            <div class="title">Internet (Ping)</div>
+            <div class="value"><span id="ping" class="text-blue">--</span></div>
+            <div class="unit">ms (Google)</div>
+        </div>
+
+        <div class="card">
+            <div class="title">Zátěž (Load)</div>
+            <div class="value" id="load">--</div>
+            <div class="unit">procesů</div>
+        </div>
+
+        <div class="card">
+            <div class="title">RAM Paměť</div>
+            <div class="value"><span id="ram-used">--</span> <span class="unit">MB</span></div>
+            <div class="progress-bg"><div id="ram-bar" class="progress-fill" style="background: #9C27B0;"></div></div>
+            <div class="unit" style="margin-top: 8px;">Celkem: <span id="ram-total">--</span> MB</div>
+        </div>
+
+        <div class="card">
+            <div class="title">SD Karta</div>
+            <div class="value"><span id="disk-percent">--</span><span class="unit">%</span></div>
+            <div class="progress-bg"><div id="disk-bar" class="progress-fill" style="background: #FF9800;"></div></div>
+            <div class="unit" style="margin-top: 8px;">Volno: <span id="disk-free">--</span> GB</div>
+        </div>
+
+        <div class="card">
+            <div class="title">Síťový provoz</div>
+            <div class="network-grid">
+                <div>⬇️ <span id="net-rx" class="text-green">--</span> GB</div>
+                <div>⬆️ <span id="net-tx" class="text-blue">--</span> GB</div>
+            </div>
+            <div style="margin-top: 10px; font-size: 12px; color: #555;">Celkem přeneseno</div>
+        </div>
+
+        <div class="card" style="grid-column: 1 / -1;">
+            <div class="title">Doba běhu (Uptime)</div>
+            <div class="value" id="uptime" style="font-size: 20px; color: #aaa;">--</div>
+        </div>
+    </div>
+
+    <script>
+        function updateStats() {
+            fetch('api_status.php')
+                .then(response => response.json())
+                .then(data => {
+                    // Horní lišta
+                    document.getElementById('cpu-model').innerText = data.cpu_model;
+                    document.getElementById('kernel').innerText = data.kernel;
+
+                    // Minecraft
+                    const mcEl = document.getElementById('mc-status');
+                    mcEl.innerText = data.mc_status;
+                    mcEl.className = data.mc_status.includes("ONLINE") ? "mc-status text-green" : "mc-status text-red";
+
+                    // Data
+                    document.getElementById('temp').innerText = data.temp;
+                    document.getElementById('cpu-freq').innerText = data.cpu_freq;
+                    document.getElementById('ping').innerText = data.ping;
+                    document.getElementById('load').innerText = data.cpu_load;
+
+                    // RAM
+                    document.getElementById('ram-used').innerText = data.ram_used;
+                    document.getElementById('ram-total').innerText = data.ram_total;
+                    document.getElementById('ram-bar').style.width = data.ram_percent + '%';
+
+                    // Disk
+                    document.getElementById('disk-percent').innerText = data.disk_percent;
+                    document.getElementById('disk-free').innerText = data.disk_free_gb;
+                    document.getElementById('disk-bar').style.width = data.disk_percent + '%';
+
+                    // Síť
+                    document.getElementById('net-rx').innerText = data.net_rx;
+                    document.getElementById('net-tx').innerText = data.net_tx;
+
+                    document.getElementById('uptime').innerText = data.uptime;
+                })
+                .catch(err => console.error('Chyba:', err));
+        }
+
+        updateStats();
+        setInterval(updateStats, 2000); 
+    </script>
+
+</body>
+</html>

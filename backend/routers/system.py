@@ -23,6 +23,22 @@ class SystemStatus(BaseModel):
     net_tx: float
     mc_status: str
 
+@router.post("/reboot")
+def reboot_system():
+    try:
+        os.system("dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.Reboot boolean:true")
+        return {"status": "rebooting"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@router.post("/shutdown")
+def shutdown_system():
+    try:
+        os.system("dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.PowerOff boolean:true")
+        return {"status": "shutting down"}
+    except Exception as e:
+        return {"error": str(e)}
+
 @router.get("/status", response_model=SystemStatus)
 def get_system_status():
 

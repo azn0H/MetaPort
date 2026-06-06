@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Cpu, HardDrive, Thermometer, Clock, Globe, Server } from 'lucide-react'
+import { Cpu, HardDrive, Thermometer, Clock, Globe, Server, Power, RefreshCw  } from 'lucide-react'
 
 const getProgressColor = (value: number) => {
   if (value >= 90) return 'text-rose-500';
@@ -50,7 +50,7 @@ function CircularProgress({ value, label }: { value: number; label: string }) {
           <circle cx="64" cy="64" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-slate-800" />
           <circle 
             cx="64" cy="64" r="45" fill="none" 
-            stroke="currentColor"
+            stroke="currentColor" 
             strokeWidth="8" strokeLinecap="round" 
             strokeDasharray={circumference} 
             strokeDashoffset={strokeDashoffset} 
@@ -68,6 +68,10 @@ function CircularProgress({ value, label }: { value: number; label: string }) {
 
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null)
+  
+  // Stavy pro napájení
+  const [powerCountdown, setPowerCountdown] = useState<number | null>(null)
+  const [powerActionText, setPowerActionText] = useState('')
 
   useEffect(() => {
     const fetchSystem = async () => {
@@ -88,6 +92,54 @@ export default function DashboardPage() {
     return () => clearInterval(interval)
   }, [])
 
+  // Efekt pro odpočet
+  useEffect(() => {
+    if (powerCountdown !== null && powerCountdown > 0) {
+      const timer = setTimeout(() => setPowerCountdown(powerCountdown - 1), 1000)
+      return () => clearTimeout(timer)
+    } else if (powerCountdown === 0 && powerActionText.includes('Restart')) {
+      window.location.reload()
+    }
+  }, [powerCountdown, powerActionText])
+
+  // Akce napájení
+  const handlePowerAction = async (action: 'reboot' | 'shutdown') => {
+    const isReboot = action === 'reboot'
+    const confirmMessage = isReboot 
+      ? 'Opravdu chceš restartovat Raspberry Pi?' 
+      : 'Opravdu chceš úplně vypnout Raspberry Pi? (Budeš ho muset zapnout fyzicky tlačítkem!)'
+
+    if (!window.confirm(confirmMessage)) return
+
+    try {
+      const token = localStorage.getItem('jwt_token')
+      await fetch(`https://api-metaport.aznoh.cz/api/v1/system/${action}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      setPowerActionText(isReboot ? 'Restartování serveru...' : 'Vypínání serveru...')
+      setPowerCountdown(isReboot ? 45 : 20) // 45s pro restart, 20s pro vypnutí
+    } catch (err) {
+      console.error("Chyba při odesílání příkazu:", err)
+    }
+  }
+
+  // Překryvná obrazovka během restartu/vypínání
+  if (powerCountdown !== null) {
+    return (
+      <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center z-50">
+        <RefreshCw className="w-16 h-16 text-cyan-500 animate-spin mb-6" />
+        <h2 className="text-2xl font-bold text-white mb-2">{powerActionText}</h2>
+        <p className="text-slate-400 text-lg">
+          {powerActionText.includes('Restart') 
+            ? `Stránka se automaticky obnoví za ${powerCountdown} sekund.`
+            : `Můžeš bezpečně zavřít prohlížeč. (Vypne se za ${powerCountdown} s)`}
+        </p>
+      </div>
+    )
+  }
+
   // SKELETON LOADING
   if (!data) {
     return (
@@ -96,7 +148,6 @@ export default function DashboardPage() {
           <div className="w-40 h-8 bg-slate-800/50 rounded-lg animate-pulse mb-2" />
         </div>
 
-        {/* Top 4 Cards Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm">
@@ -110,9 +161,7 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Bottom 2 Cards Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Circular Progress Skeleton */}
           <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm">
             <div className="w-32 h-6 bg-slate-800 rounded mb-6 animate-pulse" />
             <div className="flex justify-around animate-pulse">
@@ -127,7 +176,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* System Info Skeleton */}
           <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm">
             <div className="w-32 h-6 bg-slate-800 rounded mb-6 animate-pulse" />
             <div className="space-y-1">
@@ -149,20 +197,39 @@ export default function DashboardPage() {
 
   const ramPercent = data.ram_total > 0 ? (data.ram_used / data.ram_total) * 100 : 0;
   const diskPercent = data.disk_percent || 0;
-
   const ramUsedPercent = data.ram_total > 0 ? Math.round((data.ram_used / data.ram_total) * 100) : 0;
   const ramColor = getProgressColor(ramUsedPercent);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white mb-2">Dashboard</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white mb-2">Dashboard</h1>
+        </div>
+        
+        {/* Tlačítka napájení */}
+        <div className="flex gap-3">
+          <button 
+            onClick={() => handlePowerAction('reboot')}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-amber-500/20 text-slate-300 hover:text-amber-400 border border-slate-700 hover:border-amber-500/50 rounded-xl transition-all text-sm font-medium shadow-lg"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span className="hidden sm:inline">Restartovat</span>
+          </button>
+          <button 
+            onClick={() => handlePowerAction('shutdown')}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-slate-700 hover:border-rose-500/50 rounded-xl transition-all text-sm font-medium shadow-lg"
+          >
+            <Power className="w-4 h-4" />
+            <span className="hidden sm:inline">Vypnout</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard title="Teplota CPU" value={data.temp} unit="°C" icon={Thermometer} color={getProgressColor(data.temp)} gradient="from-rose-500 to-pink-600" />
         <MetricCard title="Volné místo" value={data.disk_free_gb} unit=" GB" icon={HardDrive} color="text-orange-400" gradient="from-orange-500 to-rose-600" />
-        <MetricCard title="RAM Využito" value={data.ram_used} unit="Mb" icon={Cpu} color={ramColor} gradient="from-emerald-500 to-teal-600" />
+        <MetricCard title="RAM Využito" value={data.ram_used} unit=" MB" icon={Cpu} color={ramColor} gradient="from-emerald-500 to-teal-600" />
         <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 flex flex-col justify-center items-center">
           <h3 className="text-slate-400 text-sm mb-2">Minecraft Server</h3>
           <span className={`text-xl font-bold ${data.mc_status?.includes("ONLINE") ? "text-emerald-400" : "text-rose-500"}`}>
