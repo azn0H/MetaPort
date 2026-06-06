@@ -206,10 +206,15 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white mb-2">Dashboard</h1>
+          <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl bg-[url('/grid.svg')] bg-center bg-cover flex flex-col md:flex-row justify-between items-center gap-6">
+          <div>
+            <h2 className="text-4xl font-bold text-white">Vítejte v administraci MetaPort</h2>
+          </div>
         </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-2">Dashboard</h1>
+    </div>
         
         <div className="flex gap-3">
           <button 

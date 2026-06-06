@@ -73,8 +73,7 @@ export default function ProjectsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white mb-2">Projects</h1>
-        <p className="text-slate-400">View and manage your Git repositories</p>
+        <h1 className="text-2xl font-bold text-white mb-2">Projekty</h1>
       </div>
 
       {error && (
