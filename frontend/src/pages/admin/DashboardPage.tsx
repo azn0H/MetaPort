@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Cpu, HardDrive, Thermometer, Clock, Globe, Server, Power, RefreshCw  } from 'lucide-react'
+import { usePageTitle } from '../../hooks/usePageTitle' // <-- Přidán import
 
 const getProgressColor = (value: number) => {
   if (value >= 90) return 'text-rose-500';
@@ -69,6 +70,8 @@ function CircularProgress({ value, label }: { value: number; label: string }) {
 }
 
 export default function DashboardPage() {
+  usePageTitle('Dashboard') // <-- Zavolání hooku pro změnu titulku
+
   const [data, setData] = useState<any>(null)
   
   const [powerCountdown, setPowerCountdown] = useState<number | null>(null)
