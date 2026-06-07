@@ -11,3 +11,4 @@ bcrypt==3.2.2
 docker
 sqlalchemy
 passlib[bcrypt]
+asyncssh

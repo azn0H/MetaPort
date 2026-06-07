@@ -1,7 +1,10 @@
 import os
 import time
 import socket
-from fastapi import APIRouter, Depends
+import asyncio
+import asyncssh
+import jwt
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Query
 from pydantic import BaseModel
 from .auth import require_roles, get_current_user
 
@@ -23,6 +26,59 @@ class SystemStatus(BaseModel):
     net_rx: float
     net_tx: float
     mc_status: str
+
+async def verify_ws_superadmin(token: str):
+    try:
+        SECRET_KEY = os.getenv("SECRET_KEY", "fallback-klic")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        role = payload.get("role")
+        if role != "superadmin":
+            return False
+        return True
+    except:
+        return False
+
+@router.websocket("/ws/console")
+async def websocket_console(websocket: WebSocket, token: str = Query(...)):
+    await websocket.accept()
+
+    is_valid = await verify_ws_superadmin(token)
+    if not is_valid:
+        await websocket.send_text("\r\n[Chyba] Pristup odepren.\r\n")
+        await websocket.close(code=1008)
+        return
+
+    host = os.getenv("RPI_SSH_HOST", "172.17.0.1")
+    user = os.getenv("RPI_SSH_USER", "aznoh")
+    password = os.getenv("RPI_SSH_PASS", "")
+
+    try:
+        async with asyncssh.connect(host, username=user, password=password, known_hosts=None) as conn:
+            async with conn.create_process(term_type='xterm') as process:
+                await websocket.send_text(f"\r\n[Uspech] Pripojeno k {user}@{host}!\r\n")
+
+                async def read_from_ssh():
+                    try:
+                        while not process.stdout.at_eof():
+                            data = await process.stdout.read(1024)
+                            if data:
+                                await websocket.send_text(data)
+                    except Exception:
+                        pass
+
+                async def write_to_ssh():
+                    try:
+                        while True:
+                            data = await websocket.receive_text()
+                            process.stdin.write(data)
+                    except WebSocketDisconnect:
+                        pass
+
+                await asyncio.gather(read_from_ssh(), write_to_ssh())
+
+    except Exception as e:
+        await websocket.send_text(f"\r\n[Chyba SSH spojeni] {str(e)}\r\n")
+        await websocket.close()
 
 @router.post("/reboot")
 def reboot_system(current_user = Depends(require_roles(["betteradmin", "superadmin"]))):
