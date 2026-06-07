@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FileText, Book, Code, Terminal, ChevronLeft, Layers } from 'lucide-react'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 interface DocSummary {
   id: string
@@ -24,6 +25,8 @@ const getProjectIcon = (id: string) => {
 }
 
 export default function DocsPage() {
+  usePageTitle('Dokumentace')
+  
   const [projects, setProjects] = useState<DocSummary[]>([])
   const [activeDoc, setActiveDoc] = useState<DocDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)

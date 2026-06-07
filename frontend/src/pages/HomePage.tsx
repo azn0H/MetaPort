@@ -1,5 +1,6 @@
 import { Book, Globe, Layers, PenTool } from 'lucide-react'
 import MetafraLogo from '@/icons/Metafra_bez_text.svg'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 const apps = [
   {
@@ -45,6 +46,7 @@ const apps = [
 ]
 
 function HomePage() {
+    usePageTitle('Dokumentace')
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
       <div className="w-full max-w-4xl">

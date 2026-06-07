@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Terminal } from 'xterm'
 import { FitAddon } from '@xterm/addon-fit'
-// TENTO IMPORT JE KRITICKÝ - bez něj by terminál neměl správný font a rozložení
 import 'xterm/css/xterm.css' 
 import { Terminal as TerminalIcon, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 export default function ConsolePage() {
+  usePageTitle('Konzole')
+  
   const terminalRef = useRef<HTMLDivElement>(null)
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
 
@@ -36,7 +38,6 @@ export default function ConsolePage() {
     
     term.open(terminalRef.current)
     
-    // Ochrana proti padání Xterm.js kvůli rychlému překreslování Reactu
     const timeoutId = setTimeout(() => {
       try {
         fitAddon.fit()
@@ -80,7 +81,6 @@ export default function ConsolePage() {
     return () => {
       clearTimeout(timeoutId)
       window.removeEventListener('resize', handleResize)
-      // Zavřeme WebSocket jen tehdy, pokud je reálně otevřený nebo se právě připojuje
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
         ws.close()
       }
@@ -123,7 +123,6 @@ export default function ConsolePage() {
           <span className="text-slate-400 text-sm font-mono">root@metaport:~#</span>
         </div>
         
-        {/* Zde se vykreslí samotný Xterm.js terminál */}
         <div 
           ref={terminalRef} 
           className="flex-1 p-4 w-full h-full overflow-hidden"

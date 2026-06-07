@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Folder, File, ArrowUp, HardDrive, Loader2, AlertCircle, Download, UploadCloud } from 'lucide-react'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 interface FileItem {
   name: string
@@ -14,6 +15,7 @@ export default function FileManagerPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+    usePageTitle('Správce souborů')
 
   const fetchFiles = async (path: string) => {
     setIsLoading(true)

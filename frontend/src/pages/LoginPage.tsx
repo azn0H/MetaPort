@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, User, ArrowRight } from 'lucide-react'
+import { usePageTitle } from '../hooks/usePageTitle'
 
 const API_URL = 'https://api-metaport.aznoh.cz'
 
 function LoginPage() {
+  usePageTitle('Přihlášení')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')

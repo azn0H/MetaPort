@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FolderGit2, GitBranch, Clock,  Globe, Server, BookOpen } from 'lucide-react'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 interface Project {
   id: number
@@ -26,6 +27,8 @@ const languageColors: Record<string, string> = {
 const API_URL = 'https://api-metaport.aznoh.cz/api/v1/projects'
 
 export default function ProjectsPage() {
+  usePageTitle('Projekty')
+  
   const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -114,7 +117,6 @@ export default function ProjectsPage() {
 
             <p className="text-slate-400 text-sm mb-6 flex-grow">{project.description}</p>
 
-            {/* Odkazy na specifické části projektu (vykreslí se, jen když data existují) */}
             <div className="flex flex-wrap gap-2 mb-6">
               {project.frontend_url && (
                 <a href={project.frontend_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800/50 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-400 border border-slate-700 hover:border-cyan-500/50 rounded-lg text-xs font-medium transition-all">

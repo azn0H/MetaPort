@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Box, Play, Square, RefreshCw, MoreVertical, Layers, FileText, X } from 'lucide-react'
 import { FilterSelect } from '../../components/FilterSelect'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 interface Container {
   id: string
@@ -15,13 +16,14 @@ interface Container {
 const API_URL = 'https://api-metaport.aznoh.cz/api/v1/containers'
 
 export default function ContainersPage() {
+  usePageTitle('Kontejnery')
+  
   const [containers, setContainers] = useState<Container[]>([])
   const [statusFilter, setStatusFilter] = useState<'all' | 'running' | 'stopped'>('all')
   const [stackFilter, setStackFilter] = useState<string>('all')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // Stavy pro logy a menu
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const [logsContainer, setLogsContainer] = useState<Container | null>(null)
   const [logsText, setLogsText] = useState<string>('')
@@ -66,8 +68,8 @@ export default function ContainersPage() {
   }
 
   const fetchLogs = async (container: Container) => {
-    setActiveMenu(null) // Zavře dropdown
-    setLogsContainer(container) // Otevře modal
+    setActiveMenu(null)
+    setLogsContainer(container)
     setIsLoadingLogs(true)
     setLogsText('')
 
@@ -257,7 +259,6 @@ export default function ContainersPage() {
                 </div>
               </div>
               
-              {/* Zprovozněné 3 tečky s dropdownem pro Logy */}
               <div className="relative">
                 <button 
                   onClick={() => setActiveMenu(activeMenu === container.id ? null : container.id)}
@@ -303,7 +304,6 @@ export default function ContainersPage() {
                 {container.status}
               </span>
 
-              {/* Tvoje původní tlačítka na spodní liště */}
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => handleAction(container.id, container.status.toLowerCase() === 'running' ? 'stop' : 'start')}
@@ -333,7 +333,6 @@ export default function ContainersPage() {
         ))}
       </div>
 
-      {/* MODAL PRO LOGY */}
       {logsContainer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">

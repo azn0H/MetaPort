@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Cpu, HardDrive, Thermometer, Clock, Globe, Server, Power, RefreshCw  } from 'lucide-react'
-import { usePageTitle } from '../../hooks/usePageTitle' // <-- Přidán import
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 const getProgressColor = (value: number) => {
   if (value >= 90) return 'text-rose-500';
@@ -78,7 +78,7 @@ export default function DashboardPage() {
   const [powerActionText, setPowerActionText] = useState('')
 
   const userRole = localStorage.getItem('user_role') || 'admin'
-  const canControlPower = userRole === 'betteradmin' || userRole === 'superadmin'
+  const canControlPower =  userRole === 'superadmin'
 
   useEffect(() => {
     const fetchSystem = async () => {
