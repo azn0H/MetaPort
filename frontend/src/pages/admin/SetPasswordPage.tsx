@@ -1,7 +1,9 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { KeyRound, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 export default function SetPasswordPage() {
+  usePageTitle('Nastavení hesla')
   const [token, setToken] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')

@@ -3,6 +3,7 @@ import { LayoutGrid, Plus } from 'lucide-react'
 import UserList from '../../components/UserList'
 import UserInviteForm from '../../components/UserInviteForm'
 import { useToast } from '../../components/ToastProvider'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
 interface UserData {
   id: number
@@ -16,6 +17,7 @@ interface UserData {
 type TabType = 'list' | 'invite'
 
 export default function UsersPage() {
+  usePageTitle('Uživatelé')
   const [activeTab, setActiveTab] = useState<TabType>('list')
   const [users, setUsers] = useState<UserData[]>([])
   const [isLoading, setIsLoading] = useState(true)

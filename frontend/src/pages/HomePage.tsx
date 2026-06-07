@@ -46,7 +46,7 @@ const apps = [
 ]
 
 function HomePage() {
-    usePageTitle('Dokumentace')
+    usePageTitle('Domů')
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
       <div className="w-full max-w-4xl">
