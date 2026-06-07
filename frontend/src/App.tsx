@@ -17,6 +17,7 @@ function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/set-password" element={<SetPasswordPage />} />
       <Route
         path="/admin"
         element={
@@ -33,7 +34,6 @@ function App() {
         <Route path="users" element={<UsersPage />} />
         <Route path="console" element={<ConsolePage />} />
         <Route path="files" element={<FileManagerPage />} />
-        <Route path="/set-password" element={<SetPasswordPage />} />
       </Route>
     </Routes>
   )
