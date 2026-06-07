@@ -5,6 +5,9 @@ import asyncio
 import asyncssh
 import stat
 from fastapi import HTTPException
+from fastapi import UploadFile, File
+from fastapi.responses import StreamingResponse
+import io
 import jwt
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Query
 from pydantic import BaseModel
@@ -208,3 +211,50 @@ def get_system_status(current_user = Depends(get_current_user)):
         "net_tx": 0.0,
         "mc_status": mc
     }
+
+@router.get("/download")
+async def download_file(
+    path: str,
+    current_user = Depends(require_roles(["superadmin"]))
+):
+    host = os.getenv("RPI_SSH_HOST", "172.17.0.1")
+    user = os.getenv("RPI_SSH_USER", "aznoh")
+    password = os.getenv("RPI_SSH_PASS", "")
+
+    try:
+        async with asyncssh.connect(host, username=user, password=password, known_hosts=None) as conn:
+            async with conn.start_sftp_client() as sftp:
+                memory_file = io.BytesIO()
+                await sftp.get(path, memory_file)
+                memory_file.seek(0)
+                filename = path.split("/")[-1]
+                return StreamingResponse(
+                    memory_file, 
+                    media_type="application/octet-stream",
+                    headers={"Content-Disposition": f"attachment; filename={filename}"}
+                )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/upload")
+async def upload_file(
+    path: str,
+    file: UploadFile = File(...),
+    current_user = Depends(require_roles(["superadmin"]))
+):
+    host = os.getenv("RPI_SSH_HOST", "172.17.0.1")
+    user = os.getenv("RPI_SSH_USER", "aznoh")
+    password = os.getenv("RPI_SSH_PASS", "")
+
+    try:
+        async with asyncssh.connect(host, username=user, password=password, known_hosts=None) as conn:
+            async with conn.start_sftp_client() as sftp:
+                file_content = await file.read()
+                remote_path = f"{path.rstrip('/')}/{file.filename}"
+                
+                async with sftp.open(remote_path, 'wb') as remote_file:
+                    await remote_file.write(file_content)
+                
+                return {"msg": "Soubor nahran"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
