@@ -58,6 +58,10 @@ class UserResponse(BaseModel):
     email: str
     role: str
 
+class SetPasswordRequest(BaseModel):
+    token: str
+    password: str
+
     class Config:
         from_attributes = True
 
@@ -111,7 +115,7 @@ def send_invite_email(email_to: str, token: str):
     smtp_user = os.getenv("SMTP_USER")
     smtp_password = os.getenv("SMTP_PASSWORD")
 
-    reset_link = f"https://metaport.aznoh.cz/nastavit-heslo?token={token}"
+    reset_link = f"https://metaport.aznoh.cz/set-password?token={token}"
 
     msg = MIMEMultipart()
     msg['From'] = smtp_user
@@ -136,6 +140,26 @@ def send_invite_email(email_to: str, token: str):
             server.send_message(msg)
     except Exception as e:
         print(f"Chyba odesilani emailu: {e}")
+
+@router.post("/set-password", status_code=status.HTTP_200_OK)
+async def set_password(data: SetPasswordRequest, db: Session = Depends(get_db)):
+    users = db.query(User).all()
+    target_user = None
+    
+    for user in users:
+        try:
+            if verify_password(data.token, user.hashed_password):
+                target_user = user
+                break
+        except:
+            continue
+            
+    if not target_user:
+        raise HTTPException(status_code=400, detail="Neplatny nebo expirovany odkaz pozvanky.")
+        
+    target_user.hashed_password = get_password_hash(data.password)
+    db.commit()
+    return {"msg": "Heslo bylo uspesne nastaveno. Nyni se muzete prihlasit."}
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):

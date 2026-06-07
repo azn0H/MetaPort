@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import UsersPage from './pages/admin/UsersPage'
 import ConsolePage from './pages/admin/ConsolePage'
 import FileManagerPage from './pages/admin/FileManagerPage'
+import SetPasswordPage from './pages/admin/SetPasswordPage'
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
         <Route path="users" element={<UsersPage />} />
         <Route path="console" element={<ConsolePage />} />
         <Route path="files" element={<FileManagerPage />} />
+        <Route path="/set-password" element={<SetPasswordPage />} />
       </Route>
     </Routes>
   )
