@@ -94,6 +94,45 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     )
     return {"access_token": access_token, "token_type": "bearer", "role": user.role}
 
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    first_name: str
+    last_name: str
+    email: str
+    role: str
+
+    class Config:
+        from_attributes = True
+
+@router.get("/users", response_model=List[UserResponse])
+async def get_all_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["superadmin"]))
+):
+    users = db.query(User).all()
+    return users
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_200_OK)
+async def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["superadmin"]))
+):
+    user_to_delete = db.query(User).filter(User.id == user_id).first()
+    
+    if not user_to_delete:
+        raise HTTPException(status_code=404, detail="Uzivatel nebyl nalezen")
+        
+    if user_to_delete.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Nemuzes smazat vlastni ucet")
+
+    db.delete(user_to_delete)
+    db.commit()
+    return {"msg": f"Uzivatel {user_to_delete.username} byl uspesne smazan."}
+
 @router.post("/users", status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_data: UserCreate, 
