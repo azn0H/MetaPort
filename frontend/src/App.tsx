@@ -8,6 +8,7 @@ import ProjectsPage from './pages/admin/ProjectsPage'
 import DocsPage from './pages/admin/DocsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import UsersPage from './pages/admin/UsersPage'
+import ConsolePage from './pages/admin/ConsolePage'
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="docs" element={<DocsPage />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="console" element={<ConsolePage />} />
       </Route>
     </Routes>
   )

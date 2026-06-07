@@ -12,3 +12,4 @@ docker
 sqlalchemy
 passlib[bcrypt]
 asyncssh
+websockets
