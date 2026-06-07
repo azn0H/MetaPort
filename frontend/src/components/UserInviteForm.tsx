@@ -6,6 +6,62 @@ interface UserInviteFormProps {
   onSuccess: () => void
 }
 
+const roleMap: Record<string, string> = {
+  'admin': 'Admin',
+  'betteradmin': 'Better Admin',
+  'superadmin': 'Super Admin'
+}
+
+function FormRoleDropdown({ value, onChange }: { value: string, onChange: (v: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  const handleSelect = (val: string) => {
+    onChange(val)
+    setIsOpen(false)
+  }
+
+  return (
+    <div className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full bg-slate-950/50 border border-slate-800 rounded-lg py-2.5 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-[#0ea5e9] focus:ring-1 focus:ring-[#0ea5e9] transition-all"
+      >
+        <span>{roleMap[value] || value}</span>
+        <svg
+          className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+          <ul className="absolute z-20 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden">
+            {Object.entries(roleMap).map(([key, label]) => (
+              <li
+                key={key}
+                onClick={() => handleSelect(key)}
+                className={`px-3 py-2.5 text-sm cursor-pointer transition-colors ${
+                  value === key
+                    ? 'text-[#0ea5e9] bg-slate-700/50'
+                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                }`}
+              >
+                {label}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function UserInviteForm({ onSuccess }: UserInviteFormProps) {
   const [formData, setFormData] = useState({
     username: '',
@@ -122,16 +178,11 @@ export default function UserInviteForm({ onSuccess }: UserInviteFormProps) {
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Přístupová role</label>
             <div className="relative">
-              <Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({...formData, role: e.target.value})}
-                className="w-full bg-slate-950/50 border border-slate-800 rounded-lg py-2.5 pl-10 pr-4 text-white text-sm focus:outline-none focus:border-[#0ea5e9] focus:ring-1 focus:ring-[#0ea5e9] transition-all appearance-none cursor-pointer"
-              >
-                <option value="admin">Admin</option>
-                <option value="betteradmin">Better Admin</option>
-                <option value="superadmin">Super Admin</option>
-              </select>
+              <Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none z-10" />
+              <FormRoleDropdown 
+                value={formData.role} 
+                onChange={(val) => setFormData({...formData, role: val})} 
+              />
             </div>
           </div>
 
