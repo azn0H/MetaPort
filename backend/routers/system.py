@@ -3,6 +3,8 @@ import time
 import socket
 import asyncio
 import asyncssh
+import stat
+from fastapi import HTTPException
 import jwt
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Query
 from pydantic import BaseModel
@@ -79,6 +81,54 @@ async def websocket_console(websocket: WebSocket, token: str = Query(...)):
     except Exception as e:
         await websocket.send_text(f"\r\n[Chyba SSH spojeni] {str(e)}\r\n")
         await websocket.close()
+
+class FileItem(BaseModel):
+    name: str
+    is_dir: bool
+    size: int
+    permissions: str
+
+@router.get("/files", response_model=list[FileItem])
+async def list_files(
+    path: str = "/home/aznoh",
+    current_user = Depends(require_roles(["superadmin"]))
+):
+    host = os.getenv("RPI_SSH_HOST", "172.17.0.1")
+    user = os.getenv("RPI_SSH_USER", "aznoh")
+    password = os.getenv("RPI_SSH_PASS", "")
+
+    try:
+        async with asyncssh.connect(host, username=user, password=password, known_hosts=None) as conn:
+            # Spuštění SFTP klienta přes existující SSH spojení
+            async with conn.start_sftp_client() as sftp:
+                try:
+                    files = await sftp.readdir(path)
+                except asyncssh.SFTPNoSuchFile:
+                    raise HTTPException(status_code=404, detail="Složka neexistuje")
+                except asyncssh.SFTPPermissionDenied:
+                    raise HTTPException(status_code=403, detail="Přístup odepřen")
+
+                result = []
+                for f in files:
+                    if f.filename in ('.', '..'):
+                        continue
+                    
+                    attrs = f.attrs
+                    is_dir = stat.S_ISDIR(attrs.permissions) if attrs.permissions else False
+                    
+                    result.append({
+                        "name": f.filename,
+                        "is_dir": is_dir,
+                        "size": attrs.size or 0,
+                        "permissions": stat.filemode(attrs.permissions) if attrs.permissions else ""
+                    })
+                
+                # Seřazení: nejprve složky, pak soubory, abecedně
+                result.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
+                return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/reboot")
 def reboot_system(current_user = Depends(require_roles(["betteradmin", "superadmin"]))):

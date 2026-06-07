@@ -9,6 +9,7 @@ import DocsPage from './pages/admin/DocsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import UsersPage from './pages/admin/UsersPage'
 import ConsolePage from './pages/admin/ConsolePage'
+import FileManagerPage from './pages/admin/FileManagerPage'
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         <Route path="docs" element={<DocsPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="console" element={<ConsolePage />} />
+        <Route path="files" element={<FileManagerPage />} />
       </Route>
     </Routes>
   )
