@@ -40,7 +40,7 @@ def init_db():
             username=admin_username,
             first_name="Hlavní",
             last_name="Admin",
-            email="admin@metaport.local",
+            email="hopsen@seznam.cz",
             hashed_password=admin_password,
             role="superadmin"
         )
