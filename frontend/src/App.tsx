@@ -7,13 +7,16 @@ import ContainersPage from './pages/admin/ContainersPage'
 import ProjectsPage from './pages/admin/ProjectsPage'
 import DocsPage from './pages/admin/DocsPage'
 import ProtectedRoute from './components/ProtectedRoute'
+import RequireRole from './components/RequireRole'
 import UsersPage from './pages/admin/UsersPage'
 import ConsolePage from './pages/admin/ConsolePage'
 import FileManagerPage from './pages/admin/FileManagerPage'
 import SetPasswordPage from './pages/admin/SetPasswordPage'
+import { ToastProvider } from './components/ToastProvider'
 
 function App() {
   return (
+  <ToastProvider>
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
@@ -28,14 +31,37 @@ function App() {
       >
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="containers" element={<ContainersPage />} />
-        <Route path="projects" element={<ProjectsPage />} />
         <Route path="docs" element={<DocsPage />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="console" element={<ConsolePage />} />
-        <Route path="files" element={<FileManagerPage />} />
+        <Route path="containers" element={
+          <RequireRole allowedRoles={['betteradmin', 'superadmin']}>
+            <ContainersPage />
+          </RequireRole>
+        } />
+        <Route path="projects" element={
+          <RequireRole allowedRoles={['betteradmin', 'superadmin']}>
+            <ProjectsPage />
+          </RequireRole>
+        } />
+        <Route path="files" element={
+          <RequireRole allowedRoles={['betteradmin', 'superadmin']}>
+            <FileManagerPage />
+          </RequireRole>
+        } />
+
+        <Route path="users" element={
+          <RequireRole allowedRoles={['superadmin']}>
+            <UsersPage />
+          </RequireRole>
+        } />
+        <Route path="console" element={
+          <RequireRole allowedRoles={['superadmin']}>
+            <ConsolePage />
+          </RequireRole>
+        } />
+        
       </Route>
     </Routes>
+    </ToastProvider>
   )
 }
 
