@@ -9,7 +9,7 @@ const navItems = [
   { path: '/admin/containers', label: 'Kontejnery', icon: Box },
   { path: '/admin/projects', label: 'Projekty', icon: FolderGit2 },
   { path: '/admin/docs', label: 'Dokumentace', icon: FileText },
-  { path: '/admin/settings', label: 'Nastavení', icon: Settings },
+  { path: '/admin/users', label: 'Správa uživatelů', icon: Settings },
 ]
 
 function AdminLayout() {
