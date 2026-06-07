@@ -22,20 +22,16 @@ export default function UsersPage() {
     first_name: '',
     last_name: '',
     email: '',
-    password: '',
     role: 'admin'
   })
 
-  // Získání jména aktuálně přihlášeného uživatele z tokenu (abychom mu schovali tlačítko smazat)
   useEffect(() => {
     const token = localStorage.getItem('jwt_token')
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]))
         setCurrentUsername(payload.sub)
-      } catch (e) {
-        console.error("Nelze dekódovat token")
-      }
+      } catch (e) {}
     }
     fetchUsers()
   }, [])
@@ -67,7 +63,7 @@ export default function UsersPage() {
 
     try {
       const token = localStorage.getItem('jwt_token')
-      const response = await fetch('https://api-metaport.aznoh.cz/api/v1/auth/users', {
+      const response = await fetch('https://api-metaport.aznoh.cz/api/v1/auth/users/invite', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,10 +74,36 @@ export default function UsersPage() {
 
       const data = await response.json()
 
-      if (!response.ok) throw new Error(data.detail || 'Nepodařilo se vytvořit uživatele')
+      if (!response.ok) throw new Error(data.detail || 'Nepodařilo se pozvat uživatele')
 
-      setSuccess(`Uživatel ${formData.username} byl vytvořen.`)
-      setFormData({ username: '', first_name: '', last_name: '', email: '', password: '', role: 'admin' })
+      setSuccess(`Pozvánka pro ${formData.username} odeslána na ${formData.email}.`)
+      setFormData({ username: '', first_name: '', last_name: '', email: '', role: 'admin' })
+      fetchUsers()
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
+  const handleRoleChange = async (userId: number, newRole: string) => {
+    setError('')
+    setSuccess('')
+
+    try {
+      const token = localStorage.getItem('jwt_token')
+      const response = await fetch(`https://api-metaport.aznoh.cz/api/v1/auth/users/${userId}/role`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ role: newRole })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) throw new Error(data.detail || 'Nepodařilo se změnit roli')
+
+      setSuccess(data.msg)
       fetchUsers()
     } catch (err: any) {
       setError(err.message)
@@ -89,9 +111,7 @@ export default function UsersPage() {
   }
 
   const handleDelete = async (userId: number, username: string) => {
-    if (!window.confirm(`Opravdu chceš smazat uživatele ${username}? Tato akce je nevratná.`)) {
-      return
-    }
+    if (!window.confirm(`Opravdu chceš smazat uživatele ${username}? Tato akce je nevratná.`)) return
 
     setError('')
     setSuccess('')
@@ -110,7 +130,7 @@ export default function UsersPage() {
       if (!response.ok) throw new Error(data.detail || 'Nepodařilo se smazat uživatele')
 
       setSuccess(`Uživatel ${username} byl úspěšně smazán.`)
-      fetchUsers() // Aktualizujeme tabulku
+      fetchUsers()
     } catch (err: any) {
       setError(err.message)
     }
@@ -130,7 +150,7 @@ export default function UsersPage() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
                 <UserPlus className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-lg font-semibold text-white">Nový uživatel</h2>
+              <h2 className="text-lg font-semibold text-white">Pozvat uživatele</h2>
             </div>
 
             {error && (
@@ -219,22 +239,11 @@ export default function UsersPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Heslo</label>
-                <input
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
-                  className="w-full bg-slate-800/50 border border-slate-700 rounded-xl py-2 px-4 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors"
-                />
-              </div>
-
               <button
                 type="submit"
                 className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold py-2.5 px-4 rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all text-sm mt-4"
               >
-                Vytvořit uživatele
+                Odeslat pozvánku
               </button>
             </form>
           </div>
@@ -276,12 +285,20 @@ export default function UsersPage() {
                         <td className="px-6 py-4">{user.first_name} {user.last_name}</td>
                         <td className="px-6 py-4">{user.email}</td>
                         <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-md text-xs font-medium border
-                            ${user.role === 'superadmin' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 
-                              user.role === 'betteradmin' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
-                              'bg-slate-800 text-slate-300 border-slate-700'}`}>
-                            {user.role}
-                          </span>
+                          <select
+                            value={user.role}
+                            onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                            disabled={user.username === currentUsername}
+                            className={`px-2.5 py-1 rounded-md text-xs font-medium border appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-cyan-500
+                              ${user.username === currentUsername ? 'opacity-50 cursor-not-allowed ' : ''}
+                              ${user.role === 'superadmin' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 
+                                user.role === 'betteradmin' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                                'bg-slate-800 text-slate-300 border-slate-700'}`}
+                          >
+                            <option value="admin">Admin</option>
+                            <option value="betteradmin">Better Admin</option>
+                            <option value="superadmin">Super Admin</option>
+                          </select>
                         </td>
                         <td className="px-6 py-4 text-right">
                           {user.username !== currentUsername && (

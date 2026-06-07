@@ -133,7 +133,6 @@ export default function FileManagerPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white mb-2">Správce souborů</h1>
-        <p className="text-slate-400">Procházení systému přes zabezpečené SFTP</p>
       </div>
 
       <div className="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-2xl">

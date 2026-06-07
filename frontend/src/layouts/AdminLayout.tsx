@@ -10,8 +10,8 @@ const navItems = [
   { path: '/admin/projects', label: 'Projekty', icon: FolderGit2 },
   { path: '/admin/docs', label: 'Dokumentace', icon: FileText },
   { path: '/admin/console', label: 'Konzole', icon: Activity },
-  { path: '/admin/users', label: 'Správa uživatelů', icon: Settings },
-  { path: '/admin/files', label: 'Správa souborů', icon: FileText }
+  { path: '/admin/files', label: 'Správa souborů', icon: FileText },
+  { path: '/admin/users', label: 'Správa uživatelů', icon: Settings }
 ]
 
 function AdminLayout() {
@@ -103,7 +103,7 @@ function AdminLayout() {
             </button>
             <div className="flex items-center gap-2 text-sm text-slate-400">
               <Activity className="w-4 h-4" />
-              <span className="hidden sm:inline">System Status</span>
+              <span className="hidden sm:inline">MetaPort</span>
             </div>
           </div>
         </header>
