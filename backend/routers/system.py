@@ -55,10 +55,9 @@ async def websocket_console(websocket: WebSocket, token: str = Query(...)):
 
     host = os.getenv("RPI_SSH_HOST", "172.17.0.1")
     user = os.getenv("RPI_SSH_USER", "aznoh")
-    password = os.getenv("RPI_SSH_PASS", "")
 
     try:
-        async with asyncssh.connect(host, username=user, password=password, known_hosts=None) as conn:
+        async with asyncssh.connect(host, username=user, client_keys=['/app/ssh_key'], known_hosts=None) as conn:
             async with conn.create_process(term_type='xterm') as process:
                 await websocket.send_text(f"\r\n[Uspech] Pripojeno k {user}@{host}!\r\n")
 
@@ -98,18 +97,16 @@ async def list_files(
 ):
     host = os.getenv("RPI_SSH_HOST", "172.17.0.1")
     user = os.getenv("RPI_SSH_USER", "aznoh")
-    password = os.getenv("RPI_SSH_PASS", "")
 
     try:
-        async with asyncssh.connect(host, username=user, password=password, known_hosts=None) as conn:
-            # Spuštění SFTP klienta přes existující SSH spojení
+        async with asyncssh.connect(host, username=user, client_keys=['/app/ssh_key'], known_hosts=None) as conn:
             async with conn.start_sftp_client() as sftp:
                 try:
                     files = await sftp.readdir(path)
                 except asyncssh.SFTPNoSuchFile:
-                    raise HTTPException(status_code=404, detail="Složka neexistuje")
+                    raise HTTPException(status_code=404, detail="Slozka neexistuje")
                 except asyncssh.SFTPPermissionDenied:
-                    raise HTTPException(status_code=403, detail="Přístup odepřen")
+                    raise HTTPException(status_code=403, detail="Pristup odepren")
 
                 result = []
                 for f in files:
@@ -126,7 +123,6 @@ async def list_files(
                         "permissions": stat.filemode(attrs.permissions) if attrs.permissions else ""
                     })
                 
-                # Seřazení: nejprve složky, pak soubory, abecedně
                 result.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
                 return result
 
@@ -219,10 +215,9 @@ async def download_file(
 ):
     host = os.getenv("RPI_SSH_HOST", "172.17.0.1")
     user = os.getenv("RPI_SSH_USER", "aznoh")
-    password = os.getenv("RPI_SSH_PASS", "")
 
     try:
-        async with asyncssh.connect(host, username=user, password=password, known_hosts=None) as conn:
+        async with asyncssh.connect(host, username=user, client_keys=['/app/ssh_key'], known_hosts=None) as conn:
             async with conn.start_sftp_client() as sftp:
                 memory_file = io.BytesIO()
                 await sftp.get(path, memory_file)
@@ -244,10 +239,9 @@ async def upload_file(
 ):
     host = os.getenv("RPI_SSH_HOST", "172.17.0.1")
     user = os.getenv("RPI_SSH_USER", "aznoh")
-    password = os.getenv("RPI_SSH_PASS", "")
 
     try:
-        async with asyncssh.connect(host, username=user, password=password, known_hosts=None) as conn:
+        async with asyncssh.connect(host, username=user, client_keys=['/app/ssh_key'], known_hosts=None) as conn:
             async with conn.start_sftp_client() as sftp:
                 file_content = await file.read()
                 remote_path = f"{path.rstrip('/')}/{file.filename}"
