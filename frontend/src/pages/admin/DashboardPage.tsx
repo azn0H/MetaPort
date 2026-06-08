@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Cpu, HardDrive, Thermometer, Clock, Globe, Server, Power, RefreshCw  } from 'lucide-react'
+import { Cpu, HardDrive, Thermometer, Clock, Globe, Server, Power, RefreshCw, Trash2 } from 'lucide-react'
 import { usePageTitle } from '../../hooks/usePageTitle'
 
 const getProgressColor = (value: number) => {
@@ -70,7 +70,7 @@ function CircularProgress({ value, label }: { value: number; label: string }) {
 }
 
 export default function DashboardPage() {
-  usePageTitle('Dashboard') // <-- Zavolání hooku pro změnu titulku
+  usePageTitle('Dashboard')
 
   const [data, setData] = useState<any>(null)
   
@@ -91,7 +91,7 @@ export default function DashboardPage() {
           const json = await response.json()
           setData(json)
         }
-      } catch (err) { console.error("Chyba při fetch:", err) }
+      } catch (err) {}
     }
     
     fetchSystem()
@@ -108,11 +108,11 @@ export default function DashboardPage() {
     }
   }, [powerCountdown, powerActionText])
 
-  const handlePowerAction = async (action: 'reboot' | 'shutdown') => {
-    const isReboot = action === 'reboot'
-    const confirmMessage = isReboot 
-      ? 'Opravdu chceš restartovat Raspberry Pi?' 
-      : 'Opravdu chceš úplně vypnout Raspberry Pi?'
+  const handlePowerAction = async (action: 'reboot' | 'shutdown' | 'prune') => {
+    let confirmMessage = ''
+    if (action === 'reboot') confirmMessage = 'Opravdu chceš restartovat Raspberry Pi?'
+    else if (action === 'shutdown') confirmMessage = 'Opravdu chceš úplně vypnout Raspberry Pi?'
+    else if (action === 'prune') confirmMessage = 'Opravdu chceš promazat Docker systém? Smažou se všechny nepoužívané kontejnery, sítě, image a volumes.'
 
     if (!window.confirm(confirmMessage)) return
 
@@ -123,11 +123,14 @@ export default function DashboardPage() {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
-      setPowerActionText(isReboot ? 'Restartování serveru...' : 'Vypínání serveru...')
-      setPowerCountdown(isReboot ? 45 : 20)
-    } catch (err) {
-      console.error("Chyba při odesílání příkazu:", err)
-    }
+      if (action === 'prune') {
+        alert('Čištění Docker systému bylo spuštěno na pozadí.')
+        return
+      }
+
+      setPowerActionText(action === 'reboot' ? 'Restartování serveru...' : 'Vypínání serveru...')
+      setPowerCountdown(action === 'reboot' ? 45 : 20)
+    } catch (err) {}
   }
 
   if (powerCountdown !== null) {
@@ -217,13 +220,20 @@ export default function DashboardPage() {
           <h2 className="text-4xl font-bold text-white">Vítejte v administraci MetaPort</h2>
         </div>
       </div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">Dashboard</h1>
         </div>
         
         {canControlPower && (
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            <button 
+              onClick={() => handlePowerAction('prune')}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-purple-500/20 text-slate-300 hover:text-purple-400 border border-slate-700 hover:border-purple-500/50 rounded-xl transition-all text-sm font-medium shadow-lg"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Vyčistit Systém</span>
+            </button>
             <button 
               onClick={() => handlePowerAction('reboot')}
               className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-amber-500/20 text-slate-300 hover:text-amber-400 border border-slate-700 hover:border-amber-500/50 rounded-xl transition-all text-sm font-medium shadow-lg"

@@ -145,6 +145,14 @@ def shutdown_system(current_user = Depends(require_roles(["betteradmin", "supera
     except Exception as e:
         return {"error": str(e)}
 
+@router.post("/prune")
+def prune_system(current_user = Depends(require_roles(["superadmin"]))):
+    try:
+        os.system("docker system prune -a --volumes -f &")
+        return {"status": "pruning initiated"}
+    except Exception as e:
+        return {"error": str(e)}
+
 @router.get("/status", response_model=SystemStatus)
 def get_system_status(current_user = Depends(get_current_user)):
     with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
