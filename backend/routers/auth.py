@@ -117,22 +117,75 @@ def send_invite_email(email_to: str, token: str):
 
     reset_link = f"https://metaport.aznoh.cz/set-password?token={token}"
 
-    msg = MIMEMultipart()
+    msg = MIMEMultipart('alternative')
     msg['From'] = smtp_user
     msg['To'] = email_to
-    msg['Subject'] = "Pozvanka do MetaPort Administrace"
+    msg['Subject'] = "Pozvánka do MetaPort Administrace"
 
-    body = f"""
-    Dobry den,
+    text_body = f"""
+    Dobrý den,
     
-    byl Vam vytvoren ucet v systemu MetaPort.
-    Pro dokonceni registrace a nastaveni hesla kliknete na nasledujici odkaz:
+    byl Vám vytvořen účet v systému MetaPort.
+    Pro dokončení registrace a nastavení hesla klikněte na následující odkaz:
     
     {reset_link}
     
-    Tento odkaz je platny 24 hodin.
+    Tento odkaz je platný 24 hodin.
     """
-    msg.attach(MIMEText(body, 'plain'))
+
+    html_body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: Arial, sans-serif;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f3f4f6; padding: 40px 0;">
+            <tr>
+                <td align="center">
+                    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+                        <tr>
+                            <td align="center" style="padding: 40px 40px 20px 40px;">
+                                <h1 style="color: #111827; font-size: 24px; font-weight: bold; margin: 0;">Dokončení registrace</h1>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0 40px 20px 40px; color: #4b5563; font-size: 16px; line-height: 24px;">
+                                <p style="margin: 0 0 16px 0;">Dobrý den,</p>
+                                <p style="margin: 0 0 16px 0;">byl Vám vytvořen účet v systému <strong>MetaPort</strong>. Kliknutím na následující tlačítko Vás provedeme procesem nastavení Vašeho hesla. Upozorňujeme, že odkaz platí pouze 24 hodin.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="padding: 10px 40px 30px 40px;">
+                                <a href="{reset_link}" style="background-color: #3b82f6; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Nastavit heslo</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0 40px 30px 40px; color: #4b5563; font-size: 14px; line-height: 21px;">
+                                <p style="margin: 0 0 16px 0;">Pokud si nejste vědomi této aktivity, jednoduše tento email ignorujte.</p>
+                                <p style="margin: 0;">Děkujeme,<br>Tým MetaPort</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 20px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px; line-height: 18px;">
+                                <p style="margin: 0 0 8px 0;">Pokud se Vám nedaří použít výše uvedené tlačítko, využijte odkaz níže:</p>
+                                <a href="{reset_link}" style="color: #f97316; word-break: break-all; text-decoration: none;">{reset_link}</a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    """
+
+    part1 = MIMEText(text_body, 'plain')
+    part2 = MIMEText(html_body, 'html')
+
+    msg.attach(part1)
+    msg.attach(part2)
 
     try:
         with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
