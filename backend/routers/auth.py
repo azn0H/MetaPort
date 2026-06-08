@@ -119,7 +119,7 @@ def send_invite_email(email_to: str, token: str):
     logo_url = "https://metaport.aznoh.cz/icons/Metafra_text-cs.png"
 
     msg = MIMEMultipart('alternative')
-    msg['From'] = smtp_user
+    msg['From'] = f"MetaPort Podpora <{smtp_user}>"
     msg['To'] = email_to
     msg['Subject'] = "Pozvánka do MetaPort Administrace"
 
