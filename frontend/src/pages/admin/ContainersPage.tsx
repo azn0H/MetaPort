@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Box, Play, Square, RefreshCw, MoreVertical, Layers, FileText, X } from 'lucide-react'
+import { Box, Play, Square, RefreshCw, MoreVertical, Layers, FileText } from 'lucide-react'
 import { FilterSelect } from '../../components/FilterSelect'
 import { usePageTitle } from '../../hooks/usePageTitle'
 import { Modal } from '../../components/Modal'
