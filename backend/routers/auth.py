@@ -116,7 +116,7 @@ def send_invite_email(email_to: str, token: str):
     smtp_password = os.getenv("SMTP_PASSWORD")
 
     reset_link = f"https://metaport.aznoh.cz/set-password?token={token}"
-    logo_url = "https://metaport.aznoh.cz/icons/Metafra_text-cs.svg"
+    logo_url = "https://metaport.aznoh.cz/icons/Metafra_text-cs.png"
 
     msg = MIMEMultipart('alternative')
     msg['From'] = smtp_user
