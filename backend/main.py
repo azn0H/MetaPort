@@ -38,8 +38,8 @@ def init_db():
 
         new_admin = User(
             username=admin_username,
-            first_name="Hlavní",
-            last_name="Admin",
+            first_name="Jan",
+            last_name="Pšenčík",
             email="hopsen@seznam.cz",
             hashed_password=admin_password,
             role="superadmin"
