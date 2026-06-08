@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Cpu, HardDrive, Thermometer, Clock, Globe, Server, Power, RefreshCw, Trash2 } from 'lucide-react'
+import { Cpu, HardDrive, Thermometer, Clock, Globe, Server, Power, RefreshCw, Trash2, AlertTriangle } from 'lucide-react'
 import { usePageTitle } from '../../hooks/usePageTitle'
+import { Modal } from '../../components/Modal'
+import { useToast } from '../../components/ToastProvider'
 
 const getProgressColor = (value: number) => {
-  if (value >= 90) return 'text-rose-500';
-  if (value >= 70) return 'text-amber-500';
-  return 'text-emerald-500';
+  if (value >= 90) return 'text-rose-500'
+  if (value >= 70) return 'text-amber-500'
+  return 'text-emerald-500'
 }
 
 function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
@@ -18,7 +20,7 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
 }
 
 function MetricCard({ title, value, unit, icon: Icon, color, gradient, percent }: any) {
-  const progressWidth = percent !== undefined ? percent : value;
+  const progressWidth = percent !== undefined ? percent : value
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm">
@@ -44,7 +46,7 @@ function MetricCard({ title, value, unit, icon: Icon, color, gradient, percent }
 function CircularProgress({ value, label }: { value: number; label: string }) {
   const circumference = 2 * Math.PI * 45
   const strokeDashoffset = circumference - (Math.min(value, 100) / 100) * circumference
-  const colorClass = getProgressColor(value);
+  const colorClass = getProgressColor(value)
 
   return (
     <div className="flex flex-col items-center">
@@ -73,9 +75,14 @@ export default function DashboardPage() {
   usePageTitle('Dashboard')
 
   const [data, setData] = useState<any>(null)
-  
   const [powerCountdown, setPowerCountdown] = useState<number | null>(null)
   const [powerActionText, setPowerActionText] = useState('')
+
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
+  const [pendingAction, setPendingAction] = useState<'reboot' | 'shutdown' | 'prune' | null>(null)
+  const [confirmMessage, setConfirmMessage] = useState('')
+  
+  const { showToast } = useToast()
 
   const userRole = localStorage.getItem('user_role') || 'admin'
   const canControlPower =  userRole === 'superadmin'
@@ -108,29 +115,42 @@ export default function DashboardPage() {
     }
   }, [powerCountdown, powerActionText])
 
-  const handlePowerAction = async (action: 'reboot' | 'shutdown' | 'prune') => {
-    let confirmMessage = ''
-    if (action === 'reboot') confirmMessage = 'Opravdu chceš restartovat Raspberry Pi?'
-    else if (action === 'shutdown') confirmMessage = 'Opravdu chceš úplně vypnout Raspberry Pi?'
-    else if (action === 'prune') confirmMessage = 'Opravdu chceš promazat Docker systém? Smažou se všechny nepoužívané kontejnery, sítě, image a volumes.'
+  const requestPowerAction = (action: 'reboot' | 'shutdown' | 'prune', message: string) => {
+    setPendingAction(action)
+    setConfirmMessage(message)
+    setIsConfirmModalOpen(true)
+  }
 
-    if (!window.confirm(confirmMessage)) return
+  const executePowerAction = async () => {
+    if (!pendingAction) return
+    const action = pendingAction
+    
+    setIsConfirmModalOpen(false)
+    setPendingAction(null)
 
     try {
       const token = localStorage.getItem('jwt_token')
-      await fetch(`https://api-metaport.aznoh.cz/api/v1/system/${action}`, {
+      const response = await fetch(`https://api-metaport.aznoh.cz/api/v1/system/${action}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
+      const responseData = await response.json()
+
+      if (!response.ok) {
+        throw new Error(responseData.detail || responseData.error || 'Nepodařilo se provést akci')
+      }
+      
       if (action === 'prune') {
-        alert('Čištění Docker systému bylo spuštěno na pozadí.')
+        showToast('Čištění Docker systému bylo spuštěno na pozadí.', 'success')
         return
       }
 
       setPowerActionText(action === 'reboot' ? 'Restartování serveru...' : 'Vypínání serveru...')
       setPowerCountdown(action === 'reboot' ? 45 : 20)
-    } catch (err) {}
+    } catch (err: any) {
+      showToast(err.message, 'error')
+    }
   }
 
   if (powerCountdown !== null) {
@@ -201,17 +221,17 @@ export default function DashboardPage() {
     )
   }
 
-  const ramPercent = data.ram_total > 0 ? (data.ram_used / data.ram_total) * 100 : 0;
-  const diskPercent = data.disk_percent || 0;
-  const ramUsedPercent = data.ram_total > 0 ? Math.round((data.ram_used / data.ram_total) * 100) : 0;
-  const ramColor = getProgressColor(ramUsedPercent);
+  const ramPercent = data.ram_total > 0 ? (data.ram_used / data.ram_total) * 100 : 0
+  const diskPercent = data.disk_percent || 0
+  const ramUsedPercent = data.ram_total > 0 ? Math.round((data.ram_used / data.ram_total) * 100) : 0
+  const ramColor = getProgressColor(ramUsedPercent)
 
-  const diskColor = getProgressColor(diskPercent);
+  const diskColor = getProgressColor(diskPercent)
   const diskGradient = diskPercent >= 90 
     ? "from-rose-500 to-pink-600" 
     : diskPercent >= 70 
     ? "from-amber-500 to-orange-500" 
-    : "from-emerald-500 to-teal-600";
+    : "from-emerald-500 to-teal-600"
 
   return (
     <div className="space-y-6">
@@ -228,21 +248,21 @@ export default function DashboardPage() {
         {canControlPower && (
           <div className="flex flex-wrap gap-3">
             <button 
-              onClick={() => handlePowerAction('prune')}
+              onClick={() => requestPowerAction('prune', 'Opravdu chceš promazat Docker systém? Smažou se všechny nepoužívané kontejnery, sítě, image a volumes.')}
               className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-purple-500/20 text-slate-300 hover:text-purple-400 border border-slate-700 hover:border-purple-500/50 rounded-xl transition-all text-sm font-medium shadow-lg"
             >
               <Trash2 className="w-4 h-4" />
               <span className="hidden sm:inline">Vyčistit Systém</span>
             </button>
             <button 
-              onClick={() => handlePowerAction('reboot')}
+              onClick={() => requestPowerAction('reboot', 'Opravdu chceš restartovat Raspberry Pi?')}
               className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-amber-500/20 text-slate-300 hover:text-amber-400 border border-slate-700 hover:border-amber-500/50 rounded-xl transition-all text-sm font-medium shadow-lg"
             >
               <RefreshCw className="w-4 h-4" />
               <span className="hidden sm:inline">Restartovat</span>
             </button>
             <button 
-              onClick={() => handlePowerAction('shutdown')}
+              onClick={() => requestPowerAction('shutdown', 'Opravdu chceš úplně vypnout Raspberry Pi?')}
               className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 border border-slate-700 hover:border-rose-500/50 rounded-xl transition-all text-sm font-medium shadow-lg"
             >
               <Power className="w-4 h-4" />
@@ -283,6 +303,38 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        maxWidth="max-w-md"
+        title={
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-500" />
+            <span className="text-white font-semibold text-lg">Potvrzení akce</span>
+          </div>
+        }
+      >
+        <div className="p-6">
+          <p className="text-slate-300 text-base mb-8">
+            {confirmMessage}
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setIsConfirmModalOpen(false)}
+              className="px-4 py-2 rounded-xl text-slate-300 font-medium hover:bg-slate-800 transition-colors"
+            >
+              Zrušit
+            </button>
+            <button
+              onClick={executePowerAction}
+              className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-medium transition-colors shadow-lg shadow-rose-500/20"
+            >
+              Provést
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Box, Play, Square, RefreshCw, MoreVertical, Layers, FileText, X } from 'lucide-react'
 import { FilterSelect } from '../../components/FilterSelect'
 import { usePageTitle } from '../../hooks/usePageTitle'
+import { Modal } from '../../components/Modal'
 
 interface Container {
   id: string
@@ -333,33 +334,26 @@ export default function ContainersPage() {
         ))}
       </div>
 
-      {logsContainer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-800/50">
-              <div className="flex items-center gap-3">
-                <FileText className="w-5 h-5 text-cyan-400" />
-                <h2 className="text-lg font-semibold text-white">Logy: {logsContainer.name}</h2>
-              </div>
-              <button 
-                onClick={() => setLogsContainer(null)}
-                className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      <Modal
+        isOpen={!!logsContainer}
+        onClose={() => setLogsContainer(null)}
+        title={
+          <>
+            <FileText className="w-5 h-5 text-cyan-400" />
+            <h2 className="text-lg font-semibold text-white">Logy: {logsContainer?.name}</h2>
+          </>
+        }
+      >
+        <div className="p-4 font-mono text-sm text-slate-300 whitespace-pre-wrap h-full">
+          {isLoadingLogs ? (
+            <div className="flex items-center justify-center h-full text-slate-500">
+              <RefreshCw className="w-6 h-6 animate-spin mr-2" /> Načítání logů...
             </div>
-            <div className="flex-1 p-4 overflow-auto bg-slate-950 font-mono text-sm text-slate-300 whitespace-pre-wrap">
-              {isLoadingLogs ? (
-                <div className="flex items-center justify-center h-full text-slate-500">
-                  <RefreshCw className="w-6 h-6 animate-spin mr-2" /> Načítání logů...
-                </div>
-              ) : (
-                logsText
-              )}
-            </div>
-          </div>
+          ) : (
+            logsText
+          )}
         </div>
-      )}
+      </Modal>
     </div>
   )
 }

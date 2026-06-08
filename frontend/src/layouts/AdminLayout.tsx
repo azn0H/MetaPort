@@ -11,7 +11,7 @@ const navItems = [
   { path: '/admin/docs', label: 'Dokumentace', icon: FileText },
   { path: '/admin/console', label: 'Konzole', icon: Activity },
   { path: '/admin/files', label: 'Správa souborů', icon: FileText },
-  { path: '/admin/users', label: 'Správa uživatelů', icon: Settings }
+  { path: '/admin/users', label: 'Admin Panel', icon: Settings }
 ]
 
 function AdminLayout() {
