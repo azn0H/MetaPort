@@ -1,25 +1,38 @@
-import { useState } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useState, useMemo } from 'react'
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom'
 import { LayoutDashboard, Box, FolderGit2, FileText, LogOut, Activity, Menu, X, Settings } from 'lucide-react'
 import MetafraLogo from '@/icons/Metafra_bez_text.svg'
-import { Link } from 'react-router-dom'
 
 const navItems = [
-  { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/admin/containers', label: 'Kontejnery', icon: Box },
-  { path: '/admin/projects', label: 'Projekty', icon: FolderGit2 },
-  { path: '/admin/docs', label: 'Dokumentace', icon: FileText },
-  { path: '/admin/console', label: 'Konzole', icon: Activity },
-  { path: '/admin/files', label: 'Správa souborů', icon: FileText },
-  { path: '/admin/users', label: 'Admin Panel', icon: Settings }
+  { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, allowedRoles: ['admin', 'betteradmin', 'superadmin'] },
+  { path: '/admin/containers', label: 'Kontejnery', icon: Box, allowedRoles: ['admin', 'betteradmin', 'superadmin'] },
+  { path: '/admin/projects', label: 'Projekty', icon: FolderGit2, allowedRoles: ['betteradmin', 'superadmin'] },
+  { path: '/admin/docs', label: 'Dokumentace', icon: FileText, allowedRoles: ['admin', 'betteradmin', 'superadmin'] },
+  { path: '/admin/console', label: 'Konzole', icon: Activity, allowedRoles: ['superadmin'] },
+  { path: '/admin/files', label: 'Správa souborů', icon: FileText, allowedRoles: ['betteradmin', 'superadmin'] },
+  { path: '/admin/users', label: 'Admin Panel', icon: Settings, allowedRoles: ['superadmin'] }
 ]
 
 function AdminLayout() {
   const navigate = useNavigate()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
+  const userRole = useMemo(() => {
+    try {
+      const token = localStorage.getItem('jwt_token')
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        return payload.role || localStorage.getItem('user_role') || 'admin'
+      }
+    } catch (e) {}
+    return 'admin'
+  }, [])
+
+  const filteredNavItems = navItems.filter(item => item.allowedRoles.includes(userRole))
+
   const handleLogout = () => {
     localStorage.removeItem('jwt_token')
+    localStorage.removeItem('user_role')
     navigate('/')
   }
 
@@ -57,7 +70,7 @@ function AdminLayout() {
 
         <nav className="flex-1 p-4">
           <ul className="space-y-2">
-            {navItems.map((item) => {
+            {filteredNavItems.map((item) => {
               const IconComponent = item.icon
               return (
                 <li key={item.path}>

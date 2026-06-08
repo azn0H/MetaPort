@@ -33,7 +33,7 @@ function App() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="docs" element={<DocsPage />} />
         <Route path="containers" element={
-          <RequireRole allowedRoles={['betteradmin', 'superadmin']}>
+          <RequireRole allowedRoles={['admin', 'betteradmin', 'superadmin']}>
             <ContainersPage />
           </RequireRole>
         } />
