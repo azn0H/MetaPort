@@ -36,16 +36,18 @@ def init_db():
     try:
         db = SessionLocal()
         admin_username = os.getenv("ADMIN_USERNAME", "admin")
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         
-        if not db.query(User).filter(User.username == admin_username).first():
-            pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-            admin_password = os.getenv("ADMIN_PASSWORD_HASH", "heslo123") 
-            
-            if admin_password.startswith("$$2b$$"):
-                admin_password = admin_password.replace("$$", "$")
-            elif not admin_password.startswith("$2b$"):
-                admin_password = pwd_context.hash(admin_password)
+        admin_password_env = os.getenv("ADMIN_PASSWORD_HASH", "heslo123") 
+        if admin_password_env.startswith("$$2b$$"):
+            admin_password = admin_password_env.replace("$$", "$")
+        elif not admin_password_env.startswith("$2b$"):
+            admin_password = pwd_context.hash(admin_password_env)
+        else:
+            admin_password = admin_password_env
 
+        user = db.query(User).filter(User.username == admin_username).first()
+        if not user:
             new_admin = User(
                 username=admin_username,
                 first_name="Jan",
@@ -55,6 +57,9 @@ def init_db():
                 role="superadmin"
             )
             db.add(new_admin)
+            db.commit()
+        else:
+            user.hashed_password = admin_password
             db.commit()
         db.close()
     except Exception as e:
