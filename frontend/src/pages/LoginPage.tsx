@@ -25,16 +25,12 @@ function LoginPage() {
     }
 
     try {
-      const formData = new URLSearchParams()
-      formData.append('email', email)
-      formData.append('password', password)
-
       const response = await fetch(`${API_URL}/api/v1/auth/token`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify({ email, password }),
       })
 
       if (!response.ok) {
