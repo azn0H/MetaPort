@@ -263,25 +263,12 @@ async def login_for_access_token(request: Request, db: Session = Depends(get_db)
     password = str(password)
 
     user = db.query(User).filter((User.email == email) | (User.username == email)).first()
-
-    # Self-healing: if user doesn't exist, create superadmin on the fly
-    if not user:
-        user = User(
-            username=email.split("@")[0] if "@" in email else email,
-            first_name="Jan",
-            last_name="Pšenčík",
-            email=email if "@" in email else "hopsen@seznam.cz",
-            hashed_password=get_password_hash(password),
-            role="superadmin"
+    if not user or not verify_password(password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Nespravny email nebo heslo",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    else:
-        # Self-healing: if password doesn't match, auto-update password so user can ALWAYS log in!
-        if not verify_password(password, user.hashed_password):
-            user.hashed_password = get_password_hash(password)
-            db.commit()
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
