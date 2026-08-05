@@ -1,10 +1,9 @@
 services:
   metaport-backend:
-    build:
-      context: ./backend
-      dns:
-        - 8.8.8.8
-        - 1.1.1.1
+    build: ./backend
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     container_name: metaport-backend
     restart: unless-stopped
     expose:
@@ -18,11 +17,10 @@ services:
       - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
 
   metaport-frontend:
-    build:
-      context: ./frontend
-      dns:
-        - 8.8.8.8
-        - 1.1.1.1
+    build: ./frontend
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     container_name: metaport-frontend
     restart: unless-stopped
     expose:
