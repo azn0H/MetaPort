@@ -4,8 +4,8 @@ WORKDIR /app
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4 \
-    && apt-get update -o Acquire::Retries=5 \
+RUN sed -i 's/deb.debian.org/cdn-fastly.deb.debian.org/g' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
        dbus \
        gcc \
