@@ -8,8 +8,8 @@ services:
       - 1.1.1.1
     container_name: metaport-backend
     restart: unless-stopped
-    expose:
-      - "8025"
+    ports:
+      - "8025:8025"
     env_file:
       - ./backend/.env
     volumes:
@@ -27,8 +27,8 @@ services:
       - 1.1.1.1
     container_name: metaport-frontend
     restart: unless-stopped
-    expose:
-      - "85"
+    ports:
+      - "85:85"
 
   cloudflared:
     image: cloudflare/cloudflared:latest
