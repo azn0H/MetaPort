@@ -93,13 +93,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
+        sub: str = payload.get("sub")
+        if sub is None:
             raise credentials_exception
     except jwt.PyJWTError:
         raise credentials_exception
         
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter((User.email == sub) | (User.username == sub)).first()
     if user is None:
         raise credentials_exception
     return user

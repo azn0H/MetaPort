@@ -94,6 +94,12 @@ export default function DashboardPage() {
         const response = await fetch('https://api-metaport.aznoh.cz/api/v1/system/status', {
           headers: { 'Authorization': `Bearer ${token}` }
         })
+        if (response.status === 401) {
+          localStorage.removeItem('jwt_token')
+          localStorage.removeItem('user_role')
+          window.location.href = '/login'
+          return
+        }
         if (response.ok) {
           const json = await response.json()
           setData(json)
