@@ -5,6 +5,7 @@ from email.mime.multipart import MIMEMultipart
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
+from urllib.parse import parse_qs
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -225,20 +226,30 @@ async def login_for_access_token(request: Request, db: Session = Depends(get_db)
     email = None
     password = None
 
+    body_bytes = await request.body()
+    body_str = body_bytes.decode("utf-8", errors="ignore")
+
+    # 1. Try parsing JSON
     try:
-        form_data = await request.form()
-        if form_data:
-            email = form_data.get("email") or form_data.get("username")
-            password = form_data.get("password")
+        json_data = await request.json()
+        if isinstance(json_data, dict):
+            email = json_data.get("email") or json_data.get("username")
+            password = json_data.get("password")
     except Exception:
         pass
 
+    # 2. Try parsing URL-encoded form data if JSON didn't yield email/password
     if not email or not password:
         try:
-            json_data = await request.json()
-            if json_data and isinstance(json_data, dict):
-                email = json_data.get("email") or json_data.get("username")
-                password = json_data.get("password")
+            parsed_form = parse_qs(body_str)
+            if parsed_form:
+                if "email" in parsed_form:
+                    email = parsed_form["email"][0]
+                elif "username" in parsed_form:
+                    email = parsed_form["username"][0]
+                
+                if "password" in parsed_form:
+                    password = parsed_form["password"][0]
         except Exception:
             pass
 
