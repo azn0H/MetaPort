@@ -6,7 +6,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from passlib.context import CryptContext
@@ -221,9 +221,31 @@ async def set_password(data: SetPasswordRequest, db: Session = Depends(get_db)):
     return {"msg": "Heslo bylo uspesne nastaveno. Nyni se muzete prihlasit."}
 
 @router.post("/token", response_model=Token)
-async def login_for_access_token(login_data: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == login_data.email).first()
-    if not user or not verify_password(login_data.password, user.hashed_password):
+async def login_for_access_token(request: Request, db: Session = Depends(get_db)):
+    email = None
+    password = None
+
+    content_type = request.headers.get("content-type", "")
+    if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+        form_data = await request.form()
+        email = form_data.get("email") or form_data.get("username")
+        password = form_data.get("password")
+    else:
+        try:
+            json_data = await request.json()
+            email = json_data.get("email") or json_data.get("username")
+            password = json_data.get("password")
+        except Exception:
+            pass
+
+    if not email or not password:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Email a heslo jsou povinne."
+        )
+
+    user = db.query(User).filter((User.email == email) | (User.username == email)).first()
+    if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Nespravny email nebo heslo",
