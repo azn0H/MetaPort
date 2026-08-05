@@ -1,6 +1,8 @@
 services:
   metaport-backend:
-    build: ./backend
+    build:
+      context: ./backend
+      network: host
     dns:
       - 8.8.8.8
       - 1.1.1.1
@@ -17,7 +19,9 @@ services:
       - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
 
   metaport-frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      network: host
     dns:
       - 8.8.8.8
       - 1.1.1.1
