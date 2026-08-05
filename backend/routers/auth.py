@@ -225,24 +225,31 @@ async def login_for_access_token(request: Request, db: Session = Depends(get_db)
     email = None
     password = None
 
-    content_type = request.headers.get("content-type", "")
-    if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+    try:
         form_data = await request.form()
-        email = form_data.get("email") or form_data.get("username")
-        password = form_data.get("password")
-    else:
+        if form_data:
+            email = form_data.get("email") or form_data.get("username")
+            password = form_data.get("password")
+    except Exception:
+        pass
+
+    if not email or not password:
         try:
             json_data = await request.json()
-            email = json_data.get("email") or json_data.get("username")
-            password = json_data.get("password")
+            if json_data and isinstance(json_data, dict):
+                email = json_data.get("email") or json_data.get("username")
+                password = json_data.get("password")
         except Exception:
             pass
 
     if not email or not password:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Email a heslo jsou povinne."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Zadejte prosim email a heslo."
         )
+
+    email = str(email).strip()
+    password = str(password)
 
     user = db.query(User).filter((User.email == email) | (User.username == email)).first()
     if not user or not verify_password(password, user.hashed_password):
