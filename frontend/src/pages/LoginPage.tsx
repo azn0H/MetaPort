@@ -7,7 +7,7 @@ const API_URL = 'https://api-metaport.aznoh.cz'
 
 function LoginPage() {
   usePageTitle('Přihlášení')
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -18,15 +18,15 @@ function LoginPage() {
     setError('')
     setIsLoading(true)
 
-    if (!username || !password) {
-      setError('Please enter both username and password')
+    if (!email || !password) {
+      setError('Please enter both email and password')
       setIsLoading(false)
       return
     }
 
     try {
       const formData = new URLSearchParams()
-      formData.append('username', username)
+      formData.append('email', email)
       formData.append('password', password)
 
       const response = await fetch(`${API_URL}/api/v1/auth/token`, {
@@ -68,18 +68,18 @@ function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-slate-300 mb-2">
-                Uživatelské jméno
+              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
+                Email
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-slate-800/50 border border-slate-700 rounded-xl py-3 pl-11 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
-                  placeholder="Zadejte uživatelské jméno"
+                  placeholder="Zadejte email"
                 />
               </div>
             </div>
