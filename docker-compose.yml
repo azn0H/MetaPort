@@ -12,10 +12,6 @@ services:
       - ./backend/docs:/app/docs
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
-    environment:
-      - ADMIN_USERNAME=${ADMIN_USERNAME}
-      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH}
-      - SECRET_KEY=${SECRET_KEY}
 
   metaport-frontend:
     build: ./frontend

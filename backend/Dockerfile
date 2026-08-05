@@ -4,10 +4,12 @@ WORKDIR /app
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    dbus \
-    gcc \
-    python3-dev \
+RUN echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4 \
+    && apt-get update -o Acquire::Retries=5 \
+    && apt-get install -y --no-install-recommends \
+       dbus \
+       gcc \
+       python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
