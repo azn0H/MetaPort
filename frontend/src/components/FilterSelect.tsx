@@ -1,12 +1,19 @@
 import { useState } from 'react'
 import type { ElementType } from 'react'
+import { ChevronDown, Check } from 'lucide-react'
 
 interface FilterSelectProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: string[];
-  defaultLabel: string;
-  icon: ElementType;
+  value: string
+  onChange: (value: string) => void
+  options: string[]
+  defaultLabel: string
+  icon: ElementType
+}
+
+const labelMap: Record<string, string> = {
+  'admin': 'Admin',
+  'betteradmin': 'Better Admin',
+  'superadmin': 'Super Admin'
 }
 
 export function FilterSelect({ 
@@ -23,59 +30,61 @@ export function FilterSelect({
     setIsOpen(false)
   }
 
-  return (
-    <div className="flex items-center gap-2">
-      <Icon className="w-4 h-4 text-slate-500" />
-      <div className="relative">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center justify-between w-40 bg-slate-900/50 border border-slate-700 text-slate-300 text-sm rounded-lg py-2 px-3 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-        >
-          <span className="truncate">{value === 'all' ? defaultLabel : value}</span>
-          <svg 
-            className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+  const getLabel = (val: string) => {
+    if (val === 'all') return defaultLabel
+    return labelMap[val] || val
+  }
 
-        {isOpen && (
-          <>
-            <div 
-              className="fixed inset-0 z-10" 
-              onClick={() => setIsOpen(false)} 
-            />
-            <ul className="absolute z-20 w-full mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden">
-              <li
-                onClick={() => handleSelect('all')}
-                className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
-                  value === 'all' 
-                    ? 'text-cyan-400 bg-slate-700/50' 
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-medium rounded-xl py-2 px-3.5 transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+      >
+        <Icon className="w-3.5 h-3.5 text-cyan-400" />
+        <span className="truncate">{getLabel(value)}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <>
+          <div 
+            className="fixed inset-0 z-20" 
+            onClick={() => setIsOpen(false)} 
+          />
+          <div className="absolute right-0 z-30 w-44 mt-1.5 bg-slate-900/95 border border-slate-800 rounded-xl shadow-2xl backdrop-blur-xl overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-150">
+            <button
+              type="button"
+              onClick={() => handleSelect('all')}
+              className={`w-full px-3 py-2 text-xs font-medium flex items-center justify-between transition-colors ${
+                value === 'all' 
+                  ? 'text-cyan-400 bg-cyan-500/10' 
+                  : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+              }`}
+            >
+              <span>{defaultLabel}</span>
+              {value === 'all' && <Check className="w-3.5 h-3.5 text-cyan-400" />}
+            </button>
+            <div className="h-px bg-slate-800/80 my-1" />
+            {options.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => handleSelect(option)}
+                className={`w-full px-3 py-2 text-xs font-medium flex items-center justify-between transition-colors ${
+                  value === option 
+                    ? 'text-cyan-400 bg-cyan-500/10' 
+                    : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
                 }`}
               >
-                {defaultLabel}
-              </li>
-              {options.map((option) => (
-                <li
-                  key={option}
-                  onClick={() => handleSelect(option)}
-                  className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
-                    value === option 
-                      ? 'text-cyan-400 bg-slate-700/50' 
-                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                  }`}
-                >
-                  {option}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
+                <span>{labelMap[option] || option}</span>
+                {value === option && <Check className="w-3.5 h-3.5 text-cyan-400" />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
-}
+}
