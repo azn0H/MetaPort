@@ -160,6 +160,47 @@ def get_all_disks() -> list[DiskInfo]:
 
     return disks
 
+def get_ssh_connect_kwargs():
+    host = os.getenv("RPI_SSH_HOST", "172.17.0.1")
+    port = int(os.getenv("RPI_SSH_PORT", "22"))
+    user = os.getenv("RPI_SSH_USER", "aznoh")
+    password = os.getenv("RPI_SSH_PASSWORD")
+    key_path = os.getenv("RPI_SSH_KEY_PATH", "/app/ssh_key")
+    key_content = os.getenv("RPI_SSH_KEY")
+    
+    kwargs = {
+        "host": host,
+        "port": port,
+        "username": user,
+        "known_hosts": None,
+    }
+    
+    if password:
+        kwargs["password"] = password
+
+    client_keys = []
+    if key_content:
+        try:
+            client_keys.append(asyncssh.import_private_key(key_content))
+        except Exception:
+            pass
+
+    for candidate_path in [
+        key_path,
+        "/app/ssh_key",
+        os.path.join(os.path.dirname(__file__), "..", "ssh_key"),
+        os.path.expanduser("~/.ssh/id_rsa"),
+        os.path.expanduser("~/.ssh/id_ed25519"),
+    ]:
+        if candidate_path and os.path.exists(candidate_path) and os.path.isfile(candidate_path):
+            if candidate_path not in client_keys:
+                client_keys.append(candidate_path)
+
+    if client_keys:
+        kwargs["client_keys"] = client_keys
+
+    return kwargs
+
 async def verify_ws_superadmin(token: str):
     try:
         SECRET_KEY = os.getenv("SECRET_KEY", "fallback-klic")
@@ -177,17 +218,19 @@ async def websocket_console(websocket: WebSocket, token: str = Query(...)):
 
     is_valid = await verify_ws_superadmin(token)
     if not is_valid:
-        await websocket.send_text("\r\n[Chyba] Pristup odepren.\r\n")
+        await websocket.send_text("\r\n\x1b[31m[Chyba] Pristup odepren (neplatny token nebo nedostatecna role).\x1b[0m\r\n")
+        await asyncio.sleep(0.5)
         await websocket.close(code=1008)
         return
 
-    host = os.getenv("RPI_SSH_HOST", "172.17.0.1")
-    user = os.getenv("RPI_SSH_USER", "aznoh")
+    ssh_kwargs = get_ssh_connect_kwargs()
+    host = ssh_kwargs.get("host", "host")
+    user = ssh_kwargs.get("username", "user")
 
     try:
-        async with asyncssh.connect(host, username=user, client_keys=['/app/ssh_key'], known_hosts=None) as conn:
-            async with conn.create_process(term_type='xterm') as process:
-                await websocket.send_text(f"\r\n[Uspech] Pripojeno k {user}@{host}!\r\n")
+        async with asyncssh.connect(**ssh_kwargs) as conn:
+            async with conn.create_process(term_type='xterm-256color', term_size=(80, 24)) as process:
+                await websocket.send_text(f"\r\n\x1b[32m[Uspech] Pripojeno k {user}@{host}!\x1b[0m\r\n\r\n")
 
                 async def read_from_ssh():
                     try:
@@ -205,12 +248,20 @@ async def websocket_console(websocket: WebSocket, token: str = Query(...)):
                             process.stdin.write(data)
                     except WebSocketDisconnect:
                         pass
+                    except Exception:
+                        pass
 
                 await asyncio.gather(read_from_ssh(), write_to_ssh())
 
     except Exception as e:
-        await websocket.send_text(f"\r\n[Chyba SSH spojeni] {str(e)}\r\n")
-        await websocket.close()
+        await websocket.send_text(f"\r\n\x1b[31m[Chyba SSH spojeni] {str(e)}\x1b[0m\r\n")
+        if not ssh_kwargs.get("password") and not ssh_kwargs.get("client_keys"):
+            await websocket.send_text("\x1b[33m[Tip] Nastavte v .env promennou RPI_SSH_PASSWORD nebo RPI_SSH_KEY_PATH.\x1b[0m\r\n")
+        await asyncio.sleep(0.5)
+        try:
+            await websocket.close()
+        except Exception:
+            pass
 
 class FileItem(BaseModel):
     name: str
@@ -223,11 +274,8 @@ async def list_files(
     path: str = "/home/aznoh",
     current_user = Depends(require_roles(["superadmin"]))
 ):
-    host = os.getenv("RPI_SSH_HOST", "172.17.0.1")
-    user = os.getenv("RPI_SSH_USER", "aznoh")
-
     try:
-        async with asyncssh.connect(host, username=user, client_keys=['/app/ssh_key'], known_hosts=None) as conn:
+        async with asyncssh.connect(**get_ssh_connect_kwargs()) as conn:
             async with conn.start_sftp_client() as sftp:
                 try:
                     files = await sftp.readdir(path)
@@ -352,11 +400,8 @@ async def download_file(
     path: str,
     current_user = Depends(require_roles(["superadmin"]))
 ):
-    host = os.getenv("RPI_SSH_HOST", "172.17.0.1")
-    user = os.getenv("RPI_SSH_USER", "aznoh")
-
     try:
-        async with asyncssh.connect(host, username=user, client_keys=['/app/ssh_key'], known_hosts=None) as conn:
+        async with asyncssh.connect(**get_ssh_connect_kwargs()) as conn:
             async with conn.start_sftp_client() as sftp:
                 memory_file = io.BytesIO()
                 await sftp.get(path, memory_file)
@@ -376,11 +421,8 @@ async def upload_file(
     file: UploadFile = File(...),
     current_user = Depends(require_roles(["superadmin"]))
 ):
-    host = os.getenv("RPI_SSH_HOST", "172.17.0.1")
-    user = os.getenv("RPI_SSH_USER", "aznoh")
-
     try:
-        async with asyncssh.connect(host, username=user, client_keys=['/app/ssh_key'], known_hosts=None) as conn:
+        async with asyncssh.connect(**get_ssh_connect_kwargs()) as conn:
             async with conn.start_sftp_client() as sftp:
                 file_content = await file.read()
                 remote_path = f"{path.rstrip('/')}/{file.filename}"

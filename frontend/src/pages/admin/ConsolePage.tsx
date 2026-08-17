@@ -15,11 +15,6 @@ export default function ConsolePage() {
     if (!terminalRef.current) return
 
     const token = localStorage.getItem('jwt_token')
-    if (!token) {
-      setStatus('disconnected')
-      return
-    }
-
     const term = new Terminal({
       cursorBlink: true,
       theme: {
@@ -35,8 +30,15 @@ export default function ConsolePage() {
 
     const fitAddon = new FitAddon()
     term.loadAddon(fitAddon)
-    
     term.open(terminalRef.current)
+
+    if (!token) {
+      setStatus('disconnected')
+      term.write('\r\n\x1b[31m[Chyba] Uživatel není přihlášen (chybí autorizační token).\x1b[0m\r\n')
+      return () => {
+        term.dispose()
+      }
+    }
     
     const timeoutId = setTimeout(() => {
       try {
@@ -51,37 +53,49 @@ export default function ConsolePage() {
     }
     window.addEventListener('resize', handleResize)
 
-    const wsUrl = `wss://api-metaport.aznoh.cz/api/v1/system/ws/console?token=${token}`
-    const ws = new WebSocket(wsUrl)
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const wsHost = isLocal 
+      ? `${window.location.hostname}:8025` 
+      : (window.location.hostname.includes('metaport.aznoh.cz') ? 'api-metaport.aznoh.cz' : `${window.location.hostname}:8025`)
+    const wsUrl = `${wsProtocol}//${wsHost}/api/v1/system/ws/console?token=${token}`
 
-    ws.onopen = () => {
-      setStatus('connected')
-      term.focus()
-    }
+    let ws: WebSocket | null = null
+    try {
+      ws = new WebSocket(wsUrl)
 
-    ws.onmessage = (event) => {
-      term.write(event.data)
-    }
-
-    ws.onclose = () => {
-      setStatus('disconnected')
-      term.write('\r\n\x1b[31m[Spojení s terminálem bylo ukončeno]\x1b[0m\r\n')
-    }
-
-    ws.onerror = () => {
-      setStatus('disconnected')
-    }
-
-    term.onData((data) => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(data)
+      ws.onopen = () => {
+        setStatus('connected')
+        term.focus()
       }
-    })
+
+      ws.onmessage = (event) => {
+        term.write(event.data)
+      }
+
+      ws.onclose = () => {
+        setStatus('disconnected')
+        term.write('\r\n\x1b[31m[Spojení s terminálem bylo ukončeno]\x1b[0m\r\n')
+      }
+
+      ws.onerror = () => {
+        setStatus('disconnected')
+      }
+
+      term.onData((data) => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(data)
+        }
+      })
+    } catch (err: any) {
+      setStatus('disconnected')
+      term.write(`\r\n\x1b[31m[Chyba připojení WebSocket]: ${err?.message || err}\x1b[0m\r\n`)
+    }
 
     return () => {
       clearTimeout(timeoutId)
       window.removeEventListener('resize', handleResize)
-      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
         ws.close()
       }
       term.dispose()
