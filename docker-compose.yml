@@ -33,7 +33,9 @@ services:
     container_name: metaport-frontend
     restart: unless-stopped
     ports:
-      - "85:85"
+      - "85:80"
+    networks:
+      - sdilena_databazova_sit
 
   metaport-db:
     image: postgres:15
