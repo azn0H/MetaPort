@@ -4,6 +4,7 @@ import socket
 import asyncio
 import asyncssh
 import stat
+import psutil
 from fastapi import HTTPException
 from fastapi import UploadFile, File
 from fastapi.responses import StreamingResponse
@@ -14,6 +15,16 @@ from pydantic import BaseModel
 from .auth import require_roles, get_current_user
 
 router = APIRouter(prefix="/api/v1/system", tags=["System"])
+
+class DiskInfo(BaseModel):
+    name: str
+    device: str
+    mountpoint: str
+    total_gb: float
+    used_gb: float
+    free_gb: float
+    percent: float
+    is_ssd: bool
 
 class SystemStatus(BaseModel):
     cpu_model: str
@@ -27,10 +38,127 @@ class SystemStatus(BaseModel):
     cpu_load: str
     disk_percent: int
     disk_free_gb: float
+    disks: list[DiskInfo] = []
     uptime: str
     net_rx: float
     net_tx: float
     mc_status: str
+
+def get_all_disks() -> list[DiskInfo]:
+    disks: list[DiskInfo] = []
+    seen_mounts = set()
+    seen_devices = set()
+
+    mount_sources = ["/proc/mounts", "/host_proc_mounts"]
+    mount_entries = []
+
+    for src in mount_sources:
+        if os.path.exists(src):
+            try:
+                with open(src, "r") as f:
+                    for line in f:
+                        parts = line.split()
+                        if len(parts) >= 3:
+                            dev, mount, fstype = parts[0], parts[1], parts[2]
+                            if fstype in ["ext4", "ext3", "ext2", "btrfs", "xfs", "zfs", "vfat", "fat", "ntfs", "exfat"]:
+                                mount_entries.append((dev, mount, fstype))
+            except Exception:
+                pass
+
+    try:
+        for part in psutil.disk_partitions(all=True):
+            if part.fstype and part.fstype not in ["squashfs", "tmpfs", "overlay", "proc", "sysfs"]:
+                mount_entries.append((part.device, part.mountpoint, part.fstype))
+    except Exception:
+        pass
+
+    if not any(m[1] == "/" for m in mount_entries):
+        mount_entries.append(("/dev/root", "/", "ext4"))
+
+    nvme_candidates = [
+        ("/dev/nvme0n1p1", "/mnt/nvme"),
+        ("/dev/nvme0n1p1", "/mnt/ssd"),
+        ("/dev/nvme0n1p1", "/mnt/nvme0n1"),
+        ("/dev/nvme0n1p1", "/host_mnt/nvme"),
+        ("/dev/nvme0n1p1", "/host_mnt/ssd"),
+        ("/dev/nvme0n1p1", "/host_mnt/nvme0n1"),
+    ]
+    for dev, mnt in nvme_candidates:
+        if os.path.exists(mnt) and not any(m[1] == mnt for m in mount_entries):
+            mount_entries.append((dev, mnt, "ext4"))
+
+    for dev, mount, _ in mount_entries:
+        if mount in seen_mounts:
+            continue
+        if mount.startswith(("/proc", "/sys", "/dev", "/run", "/var/lib/docker")):
+            continue
+
+        try:
+            st = os.statvfs(mount)
+            if st.f_blocks == 0:
+                continue
+
+            total_gb = round((st.f_blocks * st.f_frsize) / (1024**3), 1)
+            free_gb = round((st.f_bavail * st.f_frsize) / (1024**3), 1)
+            used_gb = round(total_gb - free_gb, 1)
+            percent = round(((total_gb - free_gb) / total_gb) * 100, 1) if total_gb > 0 else 0.0
+
+            is_nvme = "nvme" in dev.lower() or "nvme" in mount.lower() or "ssd" in mount.lower()
+            is_sd = "mmcblk" in dev.lower()
+
+            if is_nvme:
+                name = f"NVMe SSD ({dev.split('/')[-1] if '/' in dev else dev})"
+            elif is_sd or mount == "/":
+                name = "Systémový disk (SD / Root)" if mount == "/" else f"SD oddíl ({dev.split('/')[-1]})"
+            else:
+                name = f"Disk ({mount})"
+
+            dev_key = (dev, total_gb, free_gb)
+            if dev_key in seen_devices:
+                continue
+            seen_devices.add(dev_key)
+            seen_mounts.add(mount)
+
+            disks.append(DiskInfo(
+                name=name,
+                device=dev,
+                mountpoint=mount.replace("/host_mnt", "/mnt").replace("/host_media", "/media"),
+                total_gb=total_gb,
+                used_gb=used_gb,
+                free_gb=free_gb,
+                percent=percent,
+                is_ssd=is_nvme
+            ))
+        except Exception:
+            continue
+
+    has_nvme = any(d.is_ssd or "nvme" in d.device.lower() for d in disks)
+    if not has_nvme:
+        sys_nvme_paths = ["/sys/block/nvme0n1", "/sys/class/block/nvme0n1"]
+        for sp in sys_nvme_paths:
+            if os.path.exists(sp):
+                try:
+                    sector_path = os.path.join(sp, "size")
+                    total_gb = 0.0
+                    if os.path.exists(sector_path):
+                        with open(sector_path, "r") as f:
+                            sectors = int(f.read().strip())
+                            total_gb = round((sectors * 512) / (1024**3), 1)
+                    disks.append(DiskInfo(
+                        name="NVMe SSD (nvme0n1)",
+                        device="/dev/nvme0n1",
+                        mountpoint="Připojeno (NVMe)",
+                        total_gb=total_gb,
+                        used_gb=0.0,
+                        free_gb=total_gb,
+                        percent=0.0,
+                        is_ssd=True
+                    ))
+                    break
+                except Exception:
+                    pass
+
+    return disks
 
 async def verify_ws_superadmin(token: str):
     try:
@@ -198,6 +326,8 @@ def get_system_status(current_user = Depends(get_current_user)):
     except:
         mc = "OFFLINE"
 
+    disks = get_all_disks()
+
     return {
         "cpu_model": "Raspberry Pi 5",
         "cpu_freq": freq,
@@ -206,10 +336,11 @@ def get_system_status(current_user = Depends(get_current_user)):
         "temp": temp,
         "ram_used": used,
         "ram_total": total,
-        "ram_percent": int((used / total) * 100),
+        "ram_percent": int((used / total) * 100) if total > 0 else 0,
         "cpu_load": load,
         "disk_percent": disk_p,
         "disk_free_gb": free,
+        "disks": disks,
         "uptime": uptime,
         "net_rx": 0.0,
         "net_tx": 0.0,

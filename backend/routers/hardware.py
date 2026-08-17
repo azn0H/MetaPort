@@ -5,6 +5,7 @@ import time
 import os
 import platform
 from .auth import get_current_user
+from .system import DiskInfo, get_all_disks
 
 router = APIRouter(prefix="/api/v1/hardware", tags=["Hardware"])
 
@@ -16,6 +17,7 @@ class HardwareStats(BaseModel):
     ram_total_mb: float
     sd_usage_percent: float
     sd_free_gb: float
+    disks: list[DiskInfo] = []
     uptime_seconds: float
 
 def read_cpu_temp() -> float:
@@ -48,5 +50,6 @@ async def get_hardware_stats(current_user: str = Depends(get_current_user)):
         ram_total_mb=round(mem.total / (1024 * 1024), 0),
         sd_usage_percent=disk.percent,
         sd_free_gb=round(disk.free / (1024**3), 1),
+        disks=get_all_disks(),
         uptime_seconds=round(uptime, 0)
     )

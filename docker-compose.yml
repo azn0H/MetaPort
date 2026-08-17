@@ -17,6 +17,9 @@ services:
       - ./backend/docs:/app/docs
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
+      - /mnt:/host_mnt:ro
+      - /media:/host_media:ro
+      - /proc/mounts:/host_proc_mounts:ro
 
   metaport-frontend:
     build:

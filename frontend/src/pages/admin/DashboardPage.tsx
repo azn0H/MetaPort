@@ -1,13 +1,30 @@
 import { useState, useEffect } from 'react'
-import { Cpu, HardDrive, Thermometer, Clock, Globe, Server, Power, RefreshCw, Trash2, AlertTriangle } from 'lucide-react'
+import { Cpu, HardDrive, Thermometer, Clock, Globe, Server, Power, RefreshCw, Trash2, AlertTriangle, Zap, Database } from 'lucide-react'
 import { usePageTitle } from '../../hooks/usePageTitle'
 import { Modal } from '../../components/Modal'
 import { useToast } from '../../components/ToastProvider'
+
+interface DiskInfo {
+  name: string
+  device: string
+  mountpoint: string
+  total_gb: number
+  used_gb: number
+  free_gb: number
+  percent: number
+  is_ssd: boolean
+}
 
 const getProgressColor = (value: number) => {
   if (value >= 90) return 'text-rose-500'
   if (value >= 70) return 'text-amber-500'
   return 'text-emerald-500'
+}
+
+const getProgressGradient = (value: number) => {
+  if (value >= 90) return 'from-rose-500 to-pink-600'
+  if (value >= 70) return 'from-amber-500 to-orange-500'
+  return 'from-emerald-500 to-teal-600'
 }
 
 function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
@@ -19,7 +36,7 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
   )
 }
 
-function MetricCard({ title, value, unit, icon: Icon, color, gradient, percent }: any) {
+function MetricCard({ title, value, unit, icon: Icon, color, gradient, percent, badge }: any) {
   const progressWidth = percent !== undefined ? percent : value
 
   return (
@@ -28,7 +45,14 @@ function MetricCard({ title, value, unit, icon: Icon, color, gradient, percent }
         <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}>
           <Icon className="w-6 h-6 text-white" />
         </div>
-        <span className={`text-sm font-medium ${color}`}>{value}{unit}</span>
+        <div className="flex flex-col items-end">
+          <span className={`text-sm font-medium ${color}`}>{value}{unit}</span>
+          {badge && (
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 mt-1 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+              {badge}
+            </span>
+          )}
+        </div>
       </div>
       <h3 className="text-slate-400 text-sm mb-3">{title}</h3>
       {typeof progressWidth === 'number' && (
@@ -43,7 +67,7 @@ function MetricCard({ title, value, unit, icon: Icon, color, gradient, percent }
   )
 }
 
-function CircularProgress({ value, label }: { value: number; label: string }) {
+function CircularProgress({ value, label, sublabel }: { value: number; label: string; sublabel?: string }) {
   const circumference = 2 * Math.PI * 45
   const strokeDashoffset = circumference - (Math.min(value, 100) / 100) * circumference
   const colorClass = getProgressColor(value)
@@ -62,11 +86,12 @@ function CircularProgress({ value, label }: { value: number; label: string }) {
             className={`transition-all duration-700 ${colorClass}`} 
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className={`text-2xl font-bold ${colorClass}`}>{Math.round(value)}%</span>
+          {sublabel && <span className="text-[10px] text-slate-400 mt-0.5">{sublabel}</span>}
         </div>
       </div>
-      <span className="text-slate-400 text-sm mt-2">{label}</span>
+      <span className="text-slate-300 text-sm font-medium mt-2 text-center">{label}</span>
     </div>
   )
 }
@@ -228,16 +253,30 @@ export default function DashboardPage() {
   }
 
   const ramPercent = data.ram_total > 0 ? (data.ram_used / data.ram_total) * 100 : 0
-  const diskPercent = data.disk_percent || 0
   const ramUsedPercent = data.ram_total > 0 ? Math.round((data.ram_used / data.ram_total) * 100) : 0
   const ramColor = getProgressColor(ramUsedPercent)
 
-  const diskColor = getProgressColor(diskPercent)
-  const diskGradient = diskPercent >= 90 
-    ? "from-rose-500 to-pink-600" 
-    : diskPercent >= 70 
-    ? "from-amber-500 to-orange-500" 
-    : "from-emerald-500 to-teal-600"
+  const disks: DiskInfo[] = data.disks && data.disks.length > 0 
+    ? data.disks 
+    : [
+        {
+          name: 'Systémový disk',
+          device: '/dev/root',
+          mountpoint: '/',
+          total_gb: Math.round(((data.disk_free_gb || 0) / (1 - ((data.disk_percent || 0) / 100) || 1)) * 10) / 10 || 32,
+          used_gb: Math.round(((data.disk_free_gb || 0) * (data.disk_percent || 0) / 100) * 10) / 10,
+          free_gb: data.disk_free_gb || 0,
+          percent: data.disk_percent || 0,
+          is_ssd: false
+        }
+      ]
+
+  const nvmeDisk = disks.find(d => d.is_ssd || d.device.includes('nvme'))
+  const primaryDisplayDisk = nvmeDisk || disks[0]
+  const primaryDiskPercent = primaryDisplayDisk ? primaryDisplayDisk.percent : (data.disk_percent || 0)
+  const primaryDiskFree = primaryDisplayDisk ? primaryDisplayDisk.free_gb : (data.disk_free_gb || 0)
+  const primaryDiskColor = getProgressColor(primaryDiskPercent)
+  const primaryDiskGradient = getProgressGradient(primaryDiskPercent)
 
   return (
     <div className="space-y-6">
@@ -279,10 +318,35 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard title="Teplota CPU" value={data.temp} unit="°C" icon={Thermometer} color={getProgressColor(data.temp)} gradient="from-rose-500 to-pink-600" percent={data.temp} />
-        <MetricCard title="Volné místo" value={data.disk_free_gb} unit=" GB" icon={HardDrive} color={diskColor} gradient={diskGradient} percent={diskPercent} />
-        <MetricCard title="RAM Využito" value={data.ram_used} unit=" MB" icon={Cpu} color={ramColor} gradient="from-emerald-500 to-teal-600" percent={ramUsedPercent} />
-        <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 flex flex-col justify-center items-center">
+        <MetricCard 
+          title="Teplota CPU" 
+          value={data.temp} 
+          unit="°C" 
+          icon={Thermometer} 
+          color={getProgressColor(data.temp)} 
+          gradient="from-rose-500 to-pink-600" 
+          percent={data.temp} 
+        />
+        <MetricCard 
+          title={nvmeDisk ? "Volné místo (NVMe SSD)" : "Volné místo"} 
+          value={primaryDiskFree} 
+          unit=" GB" 
+          icon={HardDrive} 
+          color={primaryDiskColor} 
+          gradient={primaryDiskGradient} 
+          percent={primaryDiskPercent}
+          badge={nvmeDisk ? "NVMe" : undefined}
+        />
+        <MetricCard 
+          title="RAM Využito" 
+          value={data.ram_used} 
+          unit=" MB" 
+          icon={Cpu} 
+          color={ramColor} 
+          gradient="from-emerald-500 to-teal-600" 
+          percent={ramUsedPercent} 
+        />
+        <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 flex flex-col justify-center items-center backdrop-blur-sm">
           <h3 className="text-slate-400 text-sm mb-2">Minecraft Server</h3>
           <span className={`text-xl font-bold ${data.mc_status?.includes("ONLINE") ? "text-emerald-400" : "text-rose-500"}`}>
             {data.mc_status || "OFFLINE"}
@@ -291,11 +355,20 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm">
-          <h2 className="text-lg font-semibold text-white mb-6">Využití</h2>
-          <div className="flex justify-around">
-            <CircularProgress value={ramPercent} label="využití RAM" />
-            <CircularProgress value={diskPercent} label="využití disku" />
+        <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm flex flex-col justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-6">Využití systému</h2>
+            <div className="flex flex-wrap items-center justify-around gap-6 py-2">
+              <CircularProgress value={ramPercent} label="Využití RAM" sublabel={`${data.ram_used} MB`} />
+              {disks.map((disk, idx) => (
+                <CircularProgress 
+                  key={idx} 
+                  value={disk.percent} 
+                  label={disk.is_ssd ? 'Využití NVMe SSD' : `Využití ${disk.name.split(' ')[0]}`} 
+                  sublabel={`${disk.free_gb} GB volných`}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
@@ -307,6 +380,80 @@ export default function DashboardPage() {
             <InfoRow icon={Cpu} label="Kernel" value={data.kernel} />
             <InfoRow icon={Server} label="Docker" value={data.docker_version} />
           </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+              <Database className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Disky & Úložiště</h2>
+              <p className="text-xs text-slate-400">Připojené úložné jednotky (SD, NVMe SSD)</p>
+            </div>
+          </div>
+          <span className="text-xs font-mono px-3 py-1 bg-slate-800 border border-slate-700 text-slate-300 rounded-lg">
+            {disks.length} {disks.length === 1 ? 'disk' : disks.length < 5 ? 'disky' : 'disků'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {disks.map((disk, index) => {
+            const diskProgressGradient = getProgressGradient(disk.percent)
+            const diskTextColor = getProgressColor(disk.percent)
+
+            return (
+              <div 
+                key={index} 
+                className="rounded-xl bg-slate-950/60 border border-slate-800/80 p-5 hover:border-slate-700 transition-all group"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl ${disk.is_ssd ? 'bg-gradient-to-br from-cyan-500 to-indigo-600 shadow-cyan-500/20' : 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-500/20'} flex items-center justify-center shadow-md`}>
+                      {disk.is_ssd ? <Zap className="w-5 h-5 text-white" /> : <HardDrive className="w-5 h-5 text-white" />}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-medium group-hover:text-cyan-400 transition-colors">
+                          {disk.name}
+                        </span>
+                        {disk.is_ssd && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">
+                            NVMe
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs font-mono text-slate-400">
+                        {disk.device} • {disk.mountpoint}
+                      </span>
+                    </div>
+                  </div>
+                  <span className={`text-sm font-bold ${diskTextColor}`}>
+                    {Math.round(disk.percent)}%
+                  </span>
+                </div>
+
+                <div className="space-y-2 mt-4">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-400">
+                      Volno: <strong className="text-slate-200">{disk.free_gb} GB</strong>
+                    </span>
+                    <span className="text-slate-400">
+                      Celkem: <strong className="text-slate-200">{disk.total_gb} GB</strong>
+                    </span>
+                  </div>
+                  <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden p-0.5">
+                    <div
+                      className={`h-full bg-gradient-to-r ${diskProgressGradient} transition-all duration-500 rounded-full`}
+                      style={{ width: `${Math.min(Math.max(disk.percent, 0), 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
 
