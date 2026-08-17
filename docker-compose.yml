@@ -20,6 +20,8 @@ services:
       - /mnt:/host_mnt:ro
       - /media:/host_media:ro
       - /proc/mounts:/host_proc_mounts:ro
+    depends_on:
+      - metaport-db
     networks:
       - sdilena_databazova_sit
 
@@ -45,6 +47,8 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
       POSTGRES_DB: metaportdb
+    volumes:
+      - metaport_pgdata:/var/lib/postgresql/data
     networks:
       - sdilena_databazova_sit
 
@@ -57,6 +61,9 @@ services:
       - ./backend/.env
     networks:
       - sdilena_databazova_sit
+
+volumes:
+  metaport_pgdata:
 
 networks:
   sdilena_databazova_sit:

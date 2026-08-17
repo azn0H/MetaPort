@@ -13,3 +13,4 @@ sqlalchemy
 passlib[bcrypt]
 asyncssh
 websockets
+psycopg2-binary
