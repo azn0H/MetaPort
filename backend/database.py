@@ -1,12 +1,10 @@
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import create_engine, Column, Integer, String, Boolean
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Získání URL databáze z proměnných prostředí (.env nebo docker-compose)
-# Výchozí hodnota je PostgreSQL (metaport-db:5432)
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://admin:password@metaport-db:5432/metaportdb"
@@ -34,9 +32,30 @@ class User(Base):
     last_name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    role = Column(String, default="admin", nullable=False) # admin, betteradmin, superadmin
+    role = Column(String, default="admin", nullable=False)
 
-# Funkce pro získání připojení k DB
+class PortalSetting(Base):
+    __tablename__ = "portal_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, default="METAFRA", nullable=False)
+    subtitle = Column(String, default="MetaPort - Rozcestník a Raspberry Pi management dashboard", nullable=False)
+    version = Column(String, default="v1.0", nullable=False)
+    footer_text = Column(String, default="MetaPort {version} © {year} aznoH.cz", nullable=False)
+
+class PortalLink(Base):
+    __tablename__ = "portal_links"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    url = Column(String, nullable=False)
+    icon = Column(String, default="Globe", nullable=False)
+    gradient = Column(String, default="from-cyan-500 to-blue-600", nullable=False)
+    order = Column(Integer, default=0, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_external = Column(Boolean, default=True, nullable=False)
+
 def get_db():
     db = SessionLocal()
     try:

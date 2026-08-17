@@ -1,83 +1,123 @@
-import { Book, Globe, Layers, PenTool } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Globe } from 'lucide-react'
 import MetafraLogo from '@/icons/Metafra_bez_text.svg'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { ICON_MAP } from '../components/portal/portalTypes'
 
-const apps = [
+const API_BASE = 'https://api-metaport.aznoh.cz'
+
+const defaultApps = [
   {
     id: 1,
     title: 'TaskApp',
     description: 'Task management and collaboration platform',
-    icon: Book,
+    icon: 'Book',
     url: 'https://taskapp.aznoh.cz',
     gradient: 'from-cyan-500 to-blue-600',
+    is_external: true
   },
   {
     id: 2,
     title: 'Aznoh Blog',
     description: 'Personal blog and article publishing',
-    icon: PenTool,
+    icon: 'PenTool',
     url: 'https://blog.aznoh.cz',
     gradient: 'from-emerald-500 to-teal-600',
+    is_external: true
   },
   {
     id: 3,
     title: 'QRco',
     description: 'QR code generator and management',
-    icon: Layers,
+    icon: 'Layers',
     url: 'https://qrco.aznoh.cz',
     gradient: 'from-orange-500 to-rose-600',
+    is_external: true
   },
   {
     id: 4,
     title: 'MetaPort',
     description: 'Raspberry Pi management dashboard',
-    icon: Globe,
+    icon: 'Globe',
     url: 'https://metaport.aznoh.cz/admin',
     gradient: 'from-indigo-500 to-purple-600',
+    is_external: true
   },
-    {
+  {
     id: 5,
     title: 'Password Generator',
     description: 'Secure password generation',
-    icon: Globe,
+    icon: 'Globe',
     url: 'https://password.aznoh.cz',
     gradient: 'from-cyan-500 to-yellow-600',
+    is_external: true
   },
 ]
 
 function HomePage() {
-    usePageTitle('Domů')
+  usePageTitle('Domů')
+
+  const [settings, setSettings] = useState({
+    title: 'METAFRA',
+    subtitle: 'MetaPort - Rozcestník a Raspberry Pi management dashboard',
+    version: 'v1.0',
+    footer_text: 'MetaPort {version} © {year} aznoH.cz'
+  })
+  const [apps, setApps] = useState<any[]>(defaultApps)
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/v1/portal`)
+      .then((res) => {
+        if (res.ok) return res.json()
+        throw new Error('Chyba')
+      })
+      .then((data) => {
+        if (data.settings) setSettings(data.settings)
+        if (data.links && data.links.length > 0) setApps(data.links)
+      })
+      .catch(() => {
+        // Fallback to defaults
+      })
+  }, [])
+
+  const currentYear = new Date().getFullYear().toString()
+  const renderedFooter = settings.footer_text
+    ? settings.footer_text
+        .replace('{version}', settings.version || 'v1.0')
+        .replace('{year}', currentYear)
+    : `MetaPort ${settings.version || 'v1.0'} © ${currentYear} aznoH.cz`
+
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
       <div className="w-full max-w-4xl">
         <div className="text-center mb-12">
-            <img 
-              src={MetafraLogo} 
-              alt="MetaPort" 
-              className="h-16 md:h-30 w-auto mx-auto mb-4" 
-            />
+          <img 
+            src={MetafraLogo} 
+            alt={settings.title || 'MetaPort'} 
+            className="h-16 md:h-30 w-auto mx-auto mb-4" 
+          />
           <p className="text-slate-400 text-lg">
-            MetaPort - Rozcestník a Raspberry Pi management dashboard
+            {settings.subtitle}
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {apps.map((app) => {
-            const IconComponent = app.icon
+            const IconComponent = ICON_MAP[app.icon] || Globe
             return (
               <a
                 key={app.id}
                 href={app.url}
-                target="_blank"
+                target={app.is_external !== false ? '_blank' : '_self'}
                 rel="noopener noreferrer"
                 className="group relative overflow-hidden rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm transition-all duration-300 hover:border-slate-700 hover:bg-slate-900/80 hover:scale-[1.02] hover:shadow-xl hover:shadow-slate-900/50"
               >
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300">
-                  <div className={`w-full h-full bg-gradient-to-br ${app.gradient}`} />
+                  <div className={`w-full h-full bg-gradient-to-br ${app.gradient || 'from-cyan-500 to-blue-600'}`} />
                 </div>
 
                 <div className="relative flex items-start gap-4">
-                  <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${app.gradient} flex items-center justify-center shadow-lg`}>
+                  <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${app.gradient || 'from-cyan-500 to-blue-600'} flex items-center justify-center shadow-lg`}>
                     <IconComponent className="w-6 h-6 text-white" />
                   </div>
 
@@ -113,7 +153,7 @@ function HomePage() {
 
         <div className="mt-12 text-center">
           <p className="text-slate-600 text-sm">
-            MetaPort v1.0 &copy; {new Date().getFullYear()} aznoH.cz
+            {renderedFooter}
           </p>
         </div>
       </div>

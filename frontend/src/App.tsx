@@ -12,6 +12,7 @@ import UsersPage from './pages/admin/UsersPage'
 import ConsolePage from './pages/admin/ConsolePage'
 import FileManagerPage from './pages/admin/FileManagerPage'
 import SetPasswordPage from './pages/admin/SetPasswordPage'
+import PortalManagerPage from './pages/admin/PortalManagerPage'
 import { ToastProvider } from './components/ToastProvider'
 
 function App() {
@@ -40,6 +41,11 @@ function App() {
         <Route path="projects" element={
           <RequireRole allowedRoles={['betteradmin', 'superadmin']}>
             <ProjectsPage />
+          </RequireRole>
+        } />
+        <Route path="portal" element={
+          <RequireRole allowedRoles={['betteradmin', 'superadmin']}>
+            <PortalManagerPage />
           </RequireRole>
         } />
         <Route path="files" element={

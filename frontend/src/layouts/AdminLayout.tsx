@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react'
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom'
-import { LayoutDashboard, Box, FolderGit2, FileText, LogOut, Activity, Menu, X, Settings } from 'lucide-react'
+import { LayoutDashboard, Box, FolderGit2, FileText, LogOut, Activity, Menu, X, Settings, Compass } from 'lucide-react'
 import MetafraLogo from '@/icons/Metafra_bez_text.svg'
 
 const navItems = [
   { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, allowedRoles: ['admin', 'betteradmin', 'superadmin'] },
   { path: '/admin/containers', label: 'Kontejnery', icon: Box, allowedRoles: ['admin', 'betteradmin', 'superadmin'] },
   { path: '/admin/projects', label: 'Projekty', icon: FolderGit2, allowedRoles: ['betteradmin', 'superadmin'] },
+  { path: '/admin/portal', label: 'Rozcestník', icon: Compass, allowedRoles: ['betteradmin', 'superadmin'] },
   { path: '/admin/docs', label: 'Dokumentace', icon: FileText, allowedRoles: ['admin', 'betteradmin', 'superadmin'] },
   { path: '/admin/console', label: 'Konzole', icon: Activity, allowedRoles: ['superadmin'] },
   { path: '/admin/files', label: 'Správa souborů', icon: FileText, allowedRoles: ['betteradmin', 'superadmin'] },
