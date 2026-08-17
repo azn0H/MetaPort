@@ -57,3 +57,13 @@ services:
 networks:
   sdilena_databazova_sit:
     external: true
+
+cloudflared:
+  image: cloudflare/cloudflared:latest
+  container_name: metaport-cloudflared
+  restart: unless-stopped
+  command: tunnel --no-autoupdate run
+  env_file:
+    - ./backend/.env
+  networks:
+    - sdilena_databazova_sit
