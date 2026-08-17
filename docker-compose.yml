@@ -20,6 +20,8 @@ services:
       - /mnt:/host_mnt:ro
       - /media:/host_media:ro
       - /proc/mounts:/host_proc_mounts:ro
+    networks:
+      - sdilena_databazova_sit
 
   metaport-frontend:
     build:
@@ -33,6 +35,17 @@ services:
     ports:
       - "85:85"
 
+  metaport-db:
+    image: postgres:15
+    container_name: metaport-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: metaportdb
+    networks:
+      - sdilena_databazova_sit
+
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: metaport-cloudflared
@@ -40,3 +53,7 @@ services:
     command: tunnel --no-autoupdate run
     env_file:
       - ./backend/.env
+
+networks:
+  sdilena_databazova_sit:
+    external: true
