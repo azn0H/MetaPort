@@ -115,16 +115,20 @@ def require_roles(allowed_roles: List[str]):
     return role_checker
 
 def send_invite_email(email_to: str, token: str):
-    smtp_server = os.getenv("SMTP_SERVER")
-    smtp_port = int(os.getenv("SMTP_PORT", 465))
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_password = os.getenv("SMTP_PASSWORD")
+    smtp_server = os.getenv("MAIL_SERVER") or os.getenv("SMTP_SERVER")
+    smtp_port = int(os.getenv("MAIL_PORT") or os.getenv("SMTP_PORT") or 465)
+    smtp_user = os.getenv("MAIL_USERNAME") or os.getenv("SMTP_USER")
+    smtp_password = os.getenv("MAIL_PASSWORD") or os.getenv("SMTP_PASSWORD")
+    mail_from = os.getenv("MAIL_FROM") or smtp_user or "noreply@aznoh.cz"
+
+    if not smtp_server or not smtp_user or not smtp_password:
+        raise ValueError(f"Chybi konfigurace SMTP v .env (server: {smtp_server}, user: {smtp_user})")
 
     reset_link = f"https://metaport.aznoh.cz/set-password?token={token}"
     logo_url = "https://metaport.aznoh.cz/icons/Metafra_text-cs.png"
 
     msg = MIMEMultipart('alternative')
-    msg['From'] = f"MetaPort Podpora <{smtp_user}>"
+    msg['From'] = f"MetaPort Podpora <{mail_from}>"
     msg['To'] = email_to
     msg['Subject'] = "Pozvánka do MetaPort Administrace"
 
@@ -195,11 +199,18 @@ def send_invite_email(email_to: str, token: str):
     msg.attach(part2)
 
     try:
-        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
-            server.login(smtp_user, smtp_password)
-            server.send_message(msg)
+        if smtp_port == 465:
+            with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=10) as server:
+                server.login(smtp_user, smtp_password)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_password)
+                server.send_message(msg)
     except Exception as e:
         print(f"Chyba odesilani emailu: {e}")
+        raise e
 
 @router.post("/set-password", status_code=status.HTTP_200_OK)
 async def set_password(data: SetPasswordRequest, db: Session = Depends(get_db)):
@@ -334,9 +345,12 @@ async def invite_user(
         role=user_data.role
     )
     db.add(new_user)
-    db.commit()
-
-    send_invite_email(new_user.email, invite_token)
+    try:
+        send_invite_email(new_user.email, invite_token)
+    except Exception as e:
+        db.delete(new_user)
+        db.commit()
+        raise HTTPException(status_code=500, detail=f"Chyba pri odesilani emailu: {str(e)}")
 
     return {"msg": f"Pozvanka pro {user_data.username} byla odeslana na {user_data.email}."}
 
