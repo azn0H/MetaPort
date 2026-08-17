@@ -345,6 +345,9 @@ async def invite_user(
         role=user_data.role
     )
     db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
     try:
         send_invite_email(new_user.email, invite_token)
     except Exception as e:
