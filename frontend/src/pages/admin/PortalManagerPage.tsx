@@ -36,6 +36,10 @@ export default function PortalManagerPage() {
       const data = await res.json()
       setSettings(data.settings)
       setLinks(data.links)
+      try {
+        localStorage.setItem('metaport_portal_settings', JSON.stringify(data.settings))
+        localStorage.setItem('metaport_portal_links', JSON.stringify(data.links.filter((l: PortalLink) => l.is_active)))
+      } catch (e) {}
     } catch (err: any) {
       showToast(err.message || 'Chyba při načítání dat', 'error')
     } finally {
@@ -148,6 +152,9 @@ export default function PortalManagerPage() {
 
     const updatedWithOrder = newLinks.map((item, idx) => ({ ...item, order: idx + 1 }))
     setLinks(updatedWithOrder)
+    try {
+      localStorage.setItem('metaport_portal_links', JSON.stringify(updatedWithOrder.filter((l) => l.is_active)))
+    } catch (e) {}
 
     try {
       const token = localStorage.getItem('jwt_token')

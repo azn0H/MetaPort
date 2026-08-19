@@ -6,77 +6,62 @@ import { ICON_MAP } from '../components/portal/portalTypes'
 
 const API_BASE = 'https://api-metaport.aznoh.cz'
 
-const defaultApps = [
-  {
-    id: 1,
-    title: 'TaskApp',
-    description: 'Task management and collaboration platform',
-    icon: 'Book',
-    url: 'https://taskapp.aznoh.cz',
-    gradient: 'from-cyan-500 to-blue-600',
-    is_external: true
-  },
-  {
-    id: 2,
-    title: 'Aznoh Blog',
-    description: 'Personal blog and article publishing',
-    icon: 'PenTool',
-    url: 'https://blog.aznoh.cz',
-    gradient: 'from-emerald-500 to-teal-600',
-    is_external: true
-  },
-  {
-    id: 3,
-    title: 'QRco',
-    description: 'QR code generator and management',
-    icon: 'Layers',
-    url: 'https://qrco.aznoh.cz',
-    gradient: 'from-orange-500 to-rose-600',
-    is_external: true
-  },
-  {
-    id: 4,
-    title: 'MetaPort',
-    description: 'Raspberry Pi management dashboard',
-    icon: 'Globe',
-    url: 'https://metaport.aznoh.cz/admin',
-    gradient: 'from-indigo-500 to-purple-600',
-    is_external: true
-  },
-  {
-    id: 5,
-    title: 'Password Generator',
-    description: 'Secure password generation',
-    icon: 'Globe',
-    url: 'https://password.aznoh.cz',
-    gradient: 'from-cyan-500 to-yellow-600',
-    is_external: true
-  },
-]
+const defaultSettings = {
+  title: 'METAFRA',
+  subtitle: 'MetaPort - Rozcestník a Raspberry Pi management dashboard',
+  version: 'v1.0',
+  footer_text: 'MetaPort {version} © {year} aznoH.cz'
+}
+
+function getInitialSettings() {
+  try {
+    const cached = localStorage.getItem('metaport_portal_settings')
+    if (cached) return JSON.parse(cached)
+  } catch (e) {}
+  return defaultSettings
+}
+
+function getInitialApps() {
+  try {
+    const cached = localStorage.getItem('metaport_portal_links')
+    if (cached) {
+      const parsed = JSON.parse(cached)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch (e) {}
+  return null
+}
 
 function HomePage() {
   usePageTitle('Domů')
 
-  const [settings, setSettings] = useState({
-    title: 'METAFRA',
-    subtitle: 'MetaPort - Rozcestník a Raspberry Pi management dashboard',
-    version: 'v1.0',
-    footer_text: 'MetaPort {version} © {year} aznoH.cz'
-  })
-  const [apps, setApps] = useState<any[]>(defaultApps)
+  const [settings, setSettings] = useState(getInitialSettings)
+  const [apps, setApps] = useState<any[]>(() => getInitialApps() || [])
+  const [isLoading, setIsLoading] = useState<boolean>(() => getInitialApps() === null)
 
   useEffect(() => {
     fetch(`${API_BASE}/api/v1/portal`)
       .then((res) => {
         if (res.ok) return res.json()
-        throw new Error('Chyba')
+        throw new Error('Chyba při načítání portal dat')
       })
       .then((data) => {
-        if (data.settings) setSettings(data.settings)
-        if (data.links && data.links.length > 0) setApps(data.links)
+        if (data.settings) {
+          setSettings(data.settings)
+          try {
+            localStorage.setItem('metaport_portal_settings', JSON.stringify(data.settings))
+          } catch (e) {}
+        }
+        if (data.links && data.links.length > 0) {
+          setApps(data.links)
+          try {
+            localStorage.setItem('metaport_portal_links', JSON.stringify(data.links))
+          } catch (e) {}
+        }
       })
-      .catch(() => {
-        // Fallback to defaults
+      .catch(() => {})
+      .finally(() => {
+        setIsLoading(false)
       })
   }, [])
 
@@ -102,7 +87,21 @@ function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {apps.map((app) => {
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="relative overflow-hidden rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm animate-pulse flex items-start gap-4"
+              >
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-slate-800" />
+                <div className="flex-1 space-y-2 py-1">
+                  <div className="h-5 bg-slate-800 rounded w-1/3" />
+                  <div className="h-4 bg-slate-800 rounded w-3/4" />
+                </div>
+              </div>
+            ))
+          ) : (
+            apps.map((app) => {
             const IconComponent = ICON_MAP[app.icon] || Globe
             return (
               <a
@@ -148,7 +147,7 @@ function HomePage() {
                 </div>
               </a>
             )
-          })}
+          }))}
         </div>
 
         <div className="mt-12 text-center">
