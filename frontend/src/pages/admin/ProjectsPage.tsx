@@ -4,6 +4,7 @@ import { usePageTitle } from '../../hooks/usePageTitle'
 import { Card } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
 import { ProjectCardSkeleton } from '../../components/ui/Skeleton'
+import { API_BASE } from '../../config/api'
 
 interface Project {
   id: number
@@ -20,14 +21,13 @@ interface Project {
 
 const languageColors: Record<string, { dot: string; text: string }> = {
   TypeScript: { dot: 'bg-blue-400', text: 'text-blue-400' },
-  Python: { dot: 'bg-yellow-400', text: 'text-yellow-400' },
-  Go: { dot: 'bg-cyan-400', text: 'text-cyan-400' },
+  Python: { dot: 'bg-emerald-400', text: 'text-emerald-400' },
   JavaScript: { dot: 'bg-amber-400', text: 'text-amber-400' },
   HTML: { dot: 'bg-orange-400', text: 'text-orange-400' },
   CSS: { dot: 'bg-indigo-400', text: 'text-indigo-400' },
 }
 
-const API_URL = 'https://api-metaport.aznoh.cz/api/v1/projects'
+const API_URL = `${API_BASE}/api/v1/projects`
 
 export default function ProjectsPage() {
   usePageTitle('Projekty')
@@ -65,14 +65,14 @@ export default function ProjectsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Projekty</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Projekty</h1>
             <Badge variant="zinc">{projects.length}</Badge>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-xl p-4">
+        <div className="text-rose-600 dark:text-rose-400 text-xs bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl p-4">
           {error}
         </div>
       )}
@@ -85,8 +85,8 @@ export default function ProjectsPage() {
         </div>
       ) : projects.length === 0 ? (
         <Card variant="bento" className="p-12 text-center">
-          <FolderGit2 className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-zinc-300">Žádné projekty</h3>
+          <FolderGit2 className="w-12 h-12 text-zinc-400 dark:text-zinc-600 mx-auto mb-3" />
+          <h3 className="text-base font-semibold text-zinc-700 dark:text-zinc-300">Žádné projekty</h3>
           <p className="text-xs text-zinc-500 mt-1">Nebyly nalezeny žádné nakonfigurované projekty.</p>
         </Card>
       ) : (
@@ -108,11 +108,11 @@ export default function ProjectsPage() {
                   {/* Top */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3.5">
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/20 shrink-0">
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md text-white shrink-0">
                         <FolderGit2 className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-base font-bold text-white tracking-tight">
+                        <h3 className="text-base font-bold text-zinc-900 dark:text-white tracking-tight">
                           {project.name}
                         </h3>
                         <div className="flex items-center gap-2 mt-0.5">
@@ -128,14 +128,14 @@ export default function ProjectsPage() {
                       href={project.git_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors border border-transparent hover:border-zinc-700"
+                      className="p-2 rounded-xl text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700"
                       title="Otevřít GitHub repozitář"
                     >
                       <GitBranch className="w-4 h-4" />
                     </a>
                   </div>
 
-                  <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed mb-6">
                     {project.description}
                   </p>
 
@@ -146,7 +146,7 @@ export default function ProjectsPage() {
                         href={project.frontend_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#18181b] hover:bg-zinc-800 text-zinc-300 hover:text-cyan-400 border border-zinc-800 hover:border-cyan-500/30 rounded-xl text-xs font-medium transition-all"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 dark:bg-[#18181b] hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-cyan-400 border border-zinc-200 dark:border-zinc-800 hover:border-cyan-500/30 rounded-xl text-xs font-medium transition-all"
                       >
                         <Globe className="w-3.5 h-3.5 text-cyan-400" /> Web
                       </a>

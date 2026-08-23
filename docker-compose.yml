@@ -2,7 +2,6 @@ services:
   metaport-backend:
     build:
       context: ./backend
-      network: host
     dns:
       - 8.8.8.8
       - 1.1.1.1
@@ -28,7 +27,6 @@ services:
   metaport-frontend:
     build:
       context: ./frontend
-      network: host
     dns:
       - 8.8.8.8
       - 1.1.1.1
@@ -44,9 +42,9 @@ services:
     container_name: metaport-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: metaportdb
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-metaportdb}
     volumes:
       - metaport_pgdata:/var/lib/postgresql/data
     networks:

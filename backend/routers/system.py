@@ -400,20 +400,26 @@ async def download_file(
     path: str,
     current_user = Depends(require_roles(["superadmin"]))
 ):
-    try:
-        async with asyncssh.connect(**get_ssh_connect_kwargs()) as conn:
-            async with conn.start_sftp_client() as sftp:
-                memory_file = io.BytesIO()
-                await sftp.get(path, memory_file)
-                memory_file.seek(0)
-                filename = path.split("/")[-1]
-                return StreamingResponse(
-                    memory_file, 
-                    media_type="application/octet-stream",
-                    headers={"Content-Disposition": f"attachment; filename={filename}"}
-                )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    filename = path.rstrip("/").split("/")[-1] or "download"
+
+    async def file_iterator():
+        try:
+            async with asyncssh.connect(**get_ssh_connect_kwargs()) as conn:
+                async with conn.start_sftp_client() as sftp:
+                    async with sftp.open(path, 'rb') as remote_file:
+                        while True:
+                            chunk = await remote_file.read(65536)
+                            if not chunk:
+                                break
+                            yield chunk
+        except Exception:
+            pass
+
+    return StreamingResponse(
+        file_iterator(),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
 
 @router.post("/upload")
 async def upload_file(
@@ -424,12 +430,11 @@ async def upload_file(
     try:
         async with asyncssh.connect(**get_ssh_connect_kwargs()) as conn:
             async with conn.start_sftp_client() as sftp:
-                file_content = await file.read()
                 remote_path = f"{path.rstrip('/')}/{file.filename}"
-                
                 async with sftp.open(remote_path, 'wb') as remote_file:
-                    await remote_file.write(file_content)
+                    while content := await file.read(65536):
+                        await remote_file.write(content)
                 
-                return {"msg": "Soubor nahran"}
+                return {"msg": "Soubor byl úspěšně nahrán"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -33,7 +33,7 @@ export function MetricCard({
       <div>
         <div className="flex items-start justify-between gap-3 mb-3">
           <div
-            className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-md shadow-black/30 shrink-0`}
+            className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-md text-white shrink-0`}
           >
             <Icon className="w-5 h-5 text-white" />
           </div>
@@ -44,12 +44,12 @@ export function MetricCard({
           )}
         </div>
 
-        <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block mb-1">
+        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block mb-1">
           {title}
         </span>
         <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-bold tracking-tight text-white">{value}</span>
-          {unit && <span className="text-sm font-semibold text-zinc-400">{unit}</span>}
+          <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">{value}</span>
+          {unit && <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">{unit}</span>}
         </div>
       </div>
 
@@ -57,7 +57,7 @@ export function MetricCard({
         {typeof percent === 'number' && (
           <ProgressBar value={percent} size="sm" variant="auto" />
         )}
-        {subtext && <p className="text-xs text-zinc-500 mt-1">{subtext}</p>}
+        {subtext && <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-1">{subtext}</p>}
       </div>
     </Card>
   )

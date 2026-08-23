@@ -48,13 +48,13 @@ export function PortalLinkCard({
             <div
               className={`w-11 h-11 rounded-xl bg-gradient-to-br ${
                 link.gradient || 'from-cyan-500 to-blue-600'
-              } flex items-center justify-center shadow-md shrink-0`}
+              } flex items-center justify-center shadow-md text-white shrink-0`}
             >
               <IconComponent className="w-5 h-5 text-white" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-white text-sm truncate">{link.title}</h3>
+                <h3 className="font-bold text-zinc-900 dark:text-white text-sm truncate">{link.title}</h3>
                 {!link.is_active && (
                   <Badge variant="zinc" size="sm">
                     Skrytý
@@ -65,7 +65,7 @@ export function PortalLinkCard({
                 href={link.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 mt-0.5 truncate"
+                className="text-xs text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 flex items-center gap-1 mt-0.5 truncate"
               >
                 <span className="truncate">{link.url}</span>
                 <ExternalLink className="w-3 h-3 shrink-0" />
@@ -74,11 +74,11 @@ export function PortalLinkCard({
           </div>
 
           {/* Reordering Controls */}
-          <div className="flex items-center gap-1 bg-[#18181b] p-1 rounded-xl border border-zinc-800 shrink-0">
+          <div className="flex items-center gap-1 bg-zinc-100 dark:bg-[#18181b] p-1 rounded-xl border border-zinc-200 dark:border-zinc-800 shrink-0">
             <button
               onClick={() => onMove(index, 'up')}
               disabled={index === 0}
-              className="p-1 text-zinc-400 hover:text-white disabled:opacity-20 transition-colors cursor-pointer rounded-lg hover:bg-zinc-700"
+              className="p-1 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white disabled:opacity-20 transition-colors cursor-pointer rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700"
               title="Posunout nahoru"
             >
               <ChevronUp className="w-3.5 h-3.5" />
@@ -86,7 +86,7 @@ export function PortalLinkCard({
             <button
               onClick={() => onMove(index, 'down')}
               disabled={index === totalCount - 1}
-              className="p-1 text-zinc-400 hover:text-white disabled:opacity-20 transition-colors cursor-pointer rounded-lg hover:bg-zinc-700"
+              className="p-1 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white disabled:opacity-20 transition-colors cursor-pointer rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700"
               title="Posunout dolů"
             >
               <ChevronDown className="w-3.5 h-3.5" />
@@ -94,19 +94,19 @@ export function PortalLinkCard({
           </div>
         </div>
 
-        <p className="text-zinc-400 text-xs leading-relaxed line-clamp-2 mb-4">
+        <p className="text-zinc-600 dark:text-zinc-400 text-xs leading-relaxed line-clamp-2 mb-4">
           {link.description}
         </p>
       </div>
 
       {/* Card Controls Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-zinc-800/80 text-xs">
+      <div className="flex items-center justify-between pt-3 border-t border-zinc-200 dark:border-zinc-800/80 text-xs">
         <button
           onClick={() => onToggleActive(link)}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
             link.is_active
-              ? 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20'
-              : 'text-zinc-400 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50'
+              ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/20'
+              : 'text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700/50'
           }`}
         >
           {link.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -120,7 +120,7 @@ export function PortalLinkCard({
             onClick={() => onEdit(link)}
             title="Upravit box"
           >
-            <Edit2 className="w-3.5 h-3.5 text-zinc-300" />
+            <Edit2 className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
           </Button>
           <Button
             variant="ghost"
@@ -128,7 +128,7 @@ export function PortalLinkCard({
             onClick={() => onDelete(link.id, link.title)}
             title="Smazat box"
           >
-            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            <Trash2 className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
           </Button>
         </div>
       </div>

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import MetafraLogo from '@/icons/Metafra_bez_text.svg'
 import { Breadcrumbs } from '../components/ui/Breadcrumbs'
+import { ThemeToggle } from '../components/ui/ThemeToggle'
 
 interface NavSection {
   title: string
@@ -138,23 +139,23 @@ function AdminLayout() {
   const currentLabel = pathToTitle[location.pathname] || 'Dashboard'
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-100 flex selection:bg-cyan-500/20 selection:text-cyan-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 flex selection:bg-cyan-500/20 selection:text-cyan-600 dark:selection:text-cyan-300">
       {/* Mobile Backdrop */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+          className="fixed inset-0 bg-black/60 dark:bg-black/70 backdrop-blur-sm z-40 lg:hidden transition-opacity"
           onClick={closeSidebar}
         />
       )}
 
       {/* KokonutUI Sidebar */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-[#0c0d12]/95 border-r border-zinc-800/80 flex flex-col backdrop-blur-xl transition-all duration-300 ease-in-out shrink-0 ${
+        className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-white dark:bg-[#0c0d12]/95 border-r border-zinc-200 dark:border-zinc-800/80 flex flex-col backdrop-blur-xl transition-transform duration-300 ease-in-out shrink-0 shadow-sm dark:shadow-none ${
           isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Brand Header: Logo Only */}
-        <div className="h-16 px-5 border-b border-zinc-800/80 flex items-center justify-between">
+        <div className="h-16 px-5 border-b border-zinc-200 dark:border-zinc-800/80 flex items-center justify-between">
           <Link
             to="/admin"
             className="flex items-center hover:opacity-90 transition-opacity"
@@ -168,7 +169,7 @@ function AdminLayout() {
 
           <button
             onClick={closeSidebar}
-            className="lg:hidden p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="lg:hidden p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-white rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -184,7 +185,7 @@ function AdminLayout() {
 
             return (
               <div key={section.title} className="space-y-1">
-                <span className="px-3 text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
+                <span className="px-3 text-[10px] font-bold tracking-wider text-zinc-400 dark:text-zinc-500 uppercase">
                   {section.title}
                 </span>
                 <ul className="space-y-0.5 mt-1">
@@ -198,8 +199,8 @@ function AdminLayout() {
                           className={({ isActive }) =>
                             `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
                               isActive
-                                ? 'bg-zinc-800/90 text-white shadow-sm border border-zinc-700/60'
-                                : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/40'
+                                ? 'bg-zinc-100 dark:bg-zinc-800/90 text-zinc-900 dark:text-white shadow-sm border border-zinc-300/80 dark:border-zinc-700/60'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/40'
                             }`
                           }
                         >
@@ -216,16 +217,16 @@ function AdminLayout() {
         </nav>
 
         {/* User Card & Logout Footer */}
-        <div className="p-3 border-t border-zinc-800/80 bg-zinc-900/30 space-y-2">
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-zinc-900/50 border border-zinc-800/60">
+        <div className="p-3 border-t border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-900/30 space-y-2">
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/60 shadow-xs">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-sm shrink-0">
               {username.charAt(0).toUpperCase()}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold text-zinc-200 truncate">
+              <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 truncate">
                 {username}
               </span>
-              <span className="text-[10px] text-zinc-400 capitalize truncate">
+              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 capitalize truncate">
                 {userRole}
               </span>
             </div>
@@ -233,7 +234,7 @@ function AdminLayout() {
 
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all w-full border border-transparent hover:border-rose-500/20 cursor-pointer"
+            className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all w-full border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Odhlásit se</span>
@@ -242,13 +243,13 @@ function AdminLayout() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#09090b]">
+      <div className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-[#09090b]">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 h-16 bg-[#09090b]/80 border-b border-zinc-800/80 flex items-center justify-between px-4 lg:px-8 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 h-16 bg-white/80 dark:bg-[#09090b]/80 border-b border-zinc-200 dark:border-zinc-800/80 flex items-center justify-between px-4 lg:px-8 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800/60 cursor-pointer"
+              className="lg:hidden p-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/60 cursor-pointer"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -261,12 +262,15 @@ function AdminLayout() {
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {/* Theme Toggle Button */}
+            <ThemeToggle />
+
             {/* Public Portal Link */}
             <Link
               to="/"
               target="_blank"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-zinc-800 text-xs font-semibold transition-colors shadow-xs"
               title="Otevřít veřejný rozcestník"
             >
               <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />

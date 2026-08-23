@@ -31,11 +31,7 @@ CUSTOM_LINKS = {
         "frontend_url": "https://qrco.aznoh.cz",
         "api_url": "https://api.qrco.aznoh.cz",
         "docs_url": "/api/v1/projects/qrco/docs"
-    },
-    # Můžeš sem rovnou přidat další, např.:
-    # "bookiva-frontend": {
-    #     "frontend_url": "https://bookiva.eu"
-    # }
+    }
 }
 
 def format_date(iso_string: str) -> str:

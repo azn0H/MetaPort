@@ -1,5 +1,5 @@
 interface CircularGaugeProps {
-  value: number // 0 to 100
+  value: number
   label: string
   sublabel?: string
   size?: number
@@ -10,23 +10,23 @@ interface CircularGaugeProps {
 function getColorHex(variant: string, percentage: number): { stroke: string; textClass: string } {
   if (variant === 'auto') {
     if (percentage >= 90) return { stroke: '#f43f5e', textClass: 'text-rose-500' }
-    if (percentage >= 75) return { stroke: '#f59e0b', textClass: 'text-amber-400' }
-    return { stroke: '#06b6d4', textClass: 'text-cyan-400' }
+    if (percentage >= 75) return { stroke: '#f59e0b', textClass: 'text-amber-500 dark:text-amber-400' }
+    return { stroke: '#06b6d4', textClass: 'text-cyan-600 dark:text-cyan-400' }
   }
 
   switch (variant) {
     case 'cyan':
-      return { stroke: '#06b6d4', textClass: 'text-cyan-400' }
+      return { stroke: '#06b6d4', textClass: 'text-cyan-600 dark:text-cyan-400' }
     case 'emerald':
-      return { stroke: '#10b981', textClass: 'text-emerald-400' }
+      return { stroke: '#10b981', textClass: 'text-emerald-600 dark:text-emerald-400' }
     case 'amber':
-      return { stroke: '#f59e0b', textClass: 'text-amber-400' }
+      return { stroke: '#f59e0b', textClass: 'text-amber-500 dark:text-amber-400' }
     case 'rose':
       return { stroke: '#f43f5e', textClass: 'text-rose-500' }
     case 'purple':
-      return { stroke: '#a855f7', textClass: 'text-purple-400' }
+      return { stroke: '#a855f7', textClass: 'text-purple-600 dark:text-purple-400' }
     default:
-      return { stroke: '#06b6d4', textClass: 'text-cyan-400' }
+      return { stroke: '#06b6d4', textClass: 'text-cyan-600 dark:text-cyan-400' }
   }
 }
 
@@ -53,7 +53,7 @@ export function CircularGauge({
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="#27272a"
+            className="stroke-zinc-200 dark:stroke-zinc-800"
             strokeWidth={strokeWidth}
           />
           <circle
@@ -77,13 +77,13 @@ export function CircularGauge({
             {Math.round(percentage)}%
           </span>
           {sublabel && (
-            <span className="text-[10px] font-medium text-zinc-400 mt-0.5 max-w-[80px] text-center truncate">
+            <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 mt-0.5 max-w-[84px] text-center truncate">
               {sublabel}
             </span>
           )}
         </div>
       </div>
-      <span className="text-zinc-200 text-xs font-semibold mt-3 text-center tracking-tight">
+      <span className="text-zinc-700 dark:text-zinc-200 text-xs font-semibold mt-3 text-center tracking-tight">
         {label}
       </span>
     </div>

@@ -5,8 +5,8 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
-
-const API_URL = 'https://api-metaport.aznoh.cz'
+import { ThemeToggle } from '../components/ui/ThemeToggle'
+import { API_BASE } from '../config/api'
 
 function LoginPage() {
   usePageTitle('Přihlášení')
@@ -28,7 +28,7 @@ function LoginPage() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/v1/auth/token`, {
+      const response = await fetch(`${API_BASE}/api/v1/auth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -52,26 +52,27 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col justify-between p-6 selection:bg-cyan-500/20 selection:text-cyan-300">
-      <header className="max-w-md w-full mx-auto">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 flex flex-col justify-between p-6 selection:bg-cyan-500/20 selection:text-cyan-600 dark:selection:text-cyan-300">
+      <header className="max-w-md w-full mx-auto flex items-center justify-between">
         <Link
           to="/"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Zpět na rozcestník</span>
         </Link>
+        <ThemeToggle />
       </header>
 
       <div className="w-full max-w-md mx-auto my-auto py-6">
         <Card variant="bento" className="p-8 shadow-xl">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800/80">
-            <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-200">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-200 dark:border-zinc-800/80">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-200">
               <Lock className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Přihlášení</h1>
-              <p className="text-xs text-zinc-400">MetaPort Administrace</p>
+              <h1 className="text-xl font-bold text-zinc-900 dark:text-white">Přihlášení</h1>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">MetaPort Administrace</p>
             </div>
           </div>
 
@@ -97,7 +98,7 @@ function LoginPage() {
             />
 
             {error && (
-              <div className="text-rose-400 text-xs text-center bg-rose-500/10 border border-rose-500/20 rounded-xl p-3">
+              <div className="text-rose-600 dark:text-rose-400 text-xs text-center bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl p-3">
                 {error}
               </div>
             )}
@@ -116,7 +117,7 @@ function LoginPage() {
         </Card>
       </div>
 
-      <footer className="text-center text-xs text-zinc-600">
+      <footer className="text-center text-xs text-zinc-500 dark:text-zinc-600">
         MetaPort • aznoH.cz
       </footer>
     </div>

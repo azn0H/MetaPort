@@ -14,6 +14,7 @@ import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { TableRowSkeleton } from '../../components/ui/Skeleton'
+import { API_BASE } from '../../config/api'
 
 interface FileItem {
   name: string
@@ -36,7 +37,7 @@ export default function FileManagerPage() {
     try {
       const token = localStorage.getItem('jwt_token')
       const response = await fetch(
-        `https://api-metaport.aznoh.cz/api/v1/system/files?path=${encodeURIComponent(path)}`,
+        `${API_BASE}/api/v1/system/files?path=${encodeURIComponent(path)}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -83,7 +84,7 @@ export default function FileManagerPage() {
 
     try {
       const response = await fetch(
-        `https://api-metaport.aznoh.cz/api/v1/system/download?path=${encodeURIComponent(filePath)}`,
+        `${API_BASE}/api/v1/system/download?path=${encodeURIComponent(filePath)}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -122,7 +123,7 @@ export default function FileManagerPage() {
     try {
       const token = localStorage.getItem('jwt_token')
       const response = await fetch(
-        `https://api-metaport.aznoh.cz/api/v1/system/upload?path=${encodeURIComponent(currentPath)}`,
+        `${API_BASE}/api/v1/system/upload?path=${encodeURIComponent(currentPath)}`,
         {
           method: 'POST',
           headers: {
@@ -158,34 +159,34 @@ export default function FileManagerPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Soubory</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Správce souborů</h1>
             <Badge variant="zinc">{files.length}</Badge>
           </div>
         </div>
       </div>
 
-      <Card variant="bento" className="overflow-hidden !p-0 shadow-2xl">
-        {/* Navigation & Upload Bar */}
-        <div className="bg-[#121215] px-4 py-3 border-b border-zinc-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+      <Card variant="bento" className="overflow-hidden !p-0 shadow-sm dark:shadow-2xl">
+        {/* Navigation & Controls Bar */}
+        <div className="p-4 bg-zinc-50/80 dark:bg-zinc-900/40 border-b border-zinc-200 dark:border-zinc-800/80 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-1 min-w-[280px]">
             <Button
               variant="dark"
               size="sm"
               onClick={handleGoUp}
               disabled={currentPath === '/' || isLoading}
-              title="O úroveň výše"
+              leftIcon={<ArrowUp className="w-4 h-4" />}
             >
-              <ArrowUp className="w-4 h-4 text-zinc-300" />
+              Nahoru
             </Button>
 
-            <div className="flex-1 flex items-center gap-2 bg-[#09090b] px-3.5 py-1.5 rounded-xl border border-zinc-800/80 min-w-0">
-              <HardDrive className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-              <span className="text-zinc-300 font-mono text-xs truncate">{currentPath}</span>
+            <div className="flex-1 flex items-center gap-2 bg-white dark:bg-[#09090b] px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 min-w-0 shadow-xs">
+              <HardDrive className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
+              <span className="text-zinc-700 dark:text-zinc-300 font-mono text-xs truncate">{currentPath}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {isLoading && <Loader2 className="w-4 h-4 text-cyan-400 animate-spin shrink-0" />}
+            {isLoading && <Loader2 className="w-4 h-4 text-cyan-500 animate-spin shrink-0" />}
             <input
               type="file"
               ref={fileInputRef}
@@ -205,16 +206,16 @@ export default function FileManagerPage() {
         </div>
 
         {error && (
-          <div className="p-3.5 bg-rose-500/10 border-b border-rose-500/20 flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span className="text-rose-400 text-xs">{error}</span>
+          <div className="p-3.5 bg-rose-50 dark:bg-rose-500/10 border-b border-rose-200 dark:border-rose-500/20 flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+            <span className="text-rose-600 dark:text-rose-400 text-xs">{error}</span>
           </div>
         )}
 
         {/* File Table */}
-        <div className="overflow-x-auto min-h-[380px] bg-[#0d0d10]">
-          <table className="w-full text-left text-xs text-zinc-400">
-            <thead className="bg-[#121215] text-zinc-500 text-[11px] uppercase tracking-wider font-semibold border-b border-zinc-800/80">
+        <div className="overflow-x-auto min-h-[380px] bg-white dark:bg-[#0d0d10]">
+          <table className="w-full text-left text-xs text-zinc-600 dark:text-zinc-400">
+            <thead className="bg-zinc-50 dark:bg-[#121215] text-zinc-500 text-[11px] uppercase tracking-wider font-semibold border-b border-zinc-200 dark:border-zinc-800/80">
               <tr>
                 <th className="px-6 py-3">Název položky</th>
                 <th className="px-6 py-3">Velikost</th>
@@ -222,7 +223,7 @@ export default function FileManagerPage() {
                 <th className="px-6 py-3 text-right">Akce</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/50">
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/50">
               {isLoading ? (
                 <>
                   <TableRowSkeleton cols={4} />
@@ -237,8 +238,8 @@ export default function FileManagerPage() {
                     key={file.name}
                     className={`group transition-colors ${
                       file.is_dir
-                        ? 'hover:bg-zinc-800/50 cursor-pointer'
-                        : 'hover:bg-zinc-800/30'
+                        ? 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer'
+                        : 'hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30'
                     }`}
                     onClick={() => (file.is_dir ? handleNavigate(file.name) : undefined)}
                   >
@@ -246,21 +247,21 @@ export default function FileManagerPage() {
                     <div
                       className={`w-8 h-8 rounded-lg ${
                         file.is_dir
-                          ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                          : 'bg-zinc-800/80 text-zinc-400 border border-zinc-700/50'
+                          ? 'bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-500/20'
+                          : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/50'
                       } flex items-center justify-center shrink-0`}
                     >
                       {file.is_dir ? <Folder className="w-4 h-4" /> : <File className="w-4 h-4" />}
                     </div>
                     <span
                       className={`font-semibold ${
-                        file.is_dir ? 'text-white group-hover:text-cyan-300' : 'text-zinc-300'
+                        file.is_dir ? 'text-zinc-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-300' : 'text-zinc-700 dark:text-zinc-300'
                       }`}
                     >
                       {file.name}
                     </span>
                   </td>
-                  <td className="px-6 py-3 font-mono text-[11px] text-zinc-400">
+                  <td className="px-6 py-3 font-mono text-[11px] text-zinc-600 dark:text-zinc-400">
                     {file.is_dir ? '—' : formatBytes(file.size)}
                   </td>
                   <td className="px-6 py-3 font-mono text-[11px] text-zinc-500">
@@ -270,7 +271,7 @@ export default function FileManagerPage() {
                     {!file.is_dir && (
                       <button
                         onClick={(e) => handleDownload(e, file.name)}
-                        className="p-1.5 text-zinc-400 hover:text-cyan-300 hover:bg-cyan-500/10 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-zinc-400 hover:text-cyan-600 dark:hover:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 rounded-lg transition-colors cursor-pointer"
                         title="Stáhnout soubor"
                       >
                         <Download className="w-3.5 h-3.5" />
@@ -282,7 +283,7 @@ export default function FileManagerPage() {
             )}
               {!isLoading && files.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-16 text-center text-zinc-500">
+                  <td colSpan={4} className="px-6 py-16 text-center text-zinc-400 dark:text-zinc-500">
                     Tato složka je prázdná
                   </td>
                 </tr>

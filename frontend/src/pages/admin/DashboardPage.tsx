@@ -25,6 +25,7 @@ import { Button } from '../../components/ui/Button'
 import { Badge, StatusBadge } from '../../components/ui/Badge'
 import { DashboardSkeleton } from '../../components/ui/Skeleton'
 import { ProgressBar } from '../../components/ui/ProgressBar'
+import { API_BASE } from '../../config/api'
 
 interface DiskInfo {
   name: string
@@ -47,14 +48,14 @@ function SystemInfoRow({
   value: string
 }) {
   return (
-    <div className="flex items-center justify-between py-3 px-3.5 rounded-xl hover:bg-zinc-800/40 transition-colors">
+    <div className="flex items-center justify-between py-3 px-3.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/40 transition-colors">
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-300">
+        <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-300">
           <Icon className="w-4 h-4" />
         </div>
-        <span className="text-xs font-semibold text-zinc-400">{label}</span>
+        <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{label}</span>
       </div>
-      <span className="text-xs font-mono font-medium text-zinc-200">{value || 'N/A'}</span>
+      <span className="text-xs font-mono font-medium text-zinc-800 dark:text-zinc-200">{value || 'N/A'}</span>
     </div>
   )
 }
@@ -64,7 +65,6 @@ export default function DashboardPage() {
 
   const [data, setData] = useState<any>(null)
   const [powerCountdown, setPowerCountdown] = useState<number | null>(null)
-  const [powerActionText, setPowerActionText] = useState('')
 
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<'reboot' | 'shutdown' | 'prune' | null>(null)
@@ -79,7 +79,7 @@ export default function DashboardPage() {
     const fetchSystem = async () => {
       try {
         const token = localStorage.getItem('jwt_token')
-        const response = await fetch('https://api-metaport.aznoh.cz/api/v1/system/status', {
+        const response = await fetch(`${API_BASE}/api/v1/system/status`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (response.status === 401) {
@@ -101,13 +101,18 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    if (powerCountdown !== null && powerCountdown > 0) {
-      const timer = setTimeout(() => setPowerCountdown(powerCountdown - 1), 1000)
-      return () => clearTimeout(timer)
-    } else if (powerCountdown === 0 && powerActionText.includes('Restart')) {
-      window.location.reload()
+    if (powerCountdown === null) return
+    if (powerCountdown <= 0) {
+      setPowerCountdown(null)
+      return
     }
-  }, [powerCountdown, powerActionText])
+
+    const timer = setTimeout(() => {
+      setPowerCountdown((prev) => (prev !== null ? prev - 1 : null))
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [powerCountdown])
 
   const requestPowerAction = (action: 'reboot' | 'shutdown' | 'prune', message: string) => {
     setPendingAction(action)
@@ -116,73 +121,57 @@ export default function DashboardPage() {
   }
 
   const executePowerAction = async () => {
-    if (!pendingAction) return
-    const action = pendingAction
-
     setIsConfirmModalOpen(false)
-    setPendingAction(null)
+    if (!pendingAction) return
 
     try {
       const token = localStorage.getItem('jwt_token')
-      const response = await fetch(`https://api-metaport.aznoh.cz/api/v1/system/${action}`, {
+      const actionEndpointMap: Record<string, string> = {
+        reboot: '/api/v1/system/reboot',
+        shutdown: '/api/v1/system/shutdown',
+        prune: '/api/v1/system/docker/prune',
+      }
+
+      const res = await fetch(`${API_BASE}${actionEndpointMap[pendingAction]}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
 
-      const responseData = await response.json()
+      if (!res.ok) throw new Error(`Akce selhala: ${res.statusText}`)
 
-      if (!response.ok) {
-        throw new Error(responseData.detail || responseData.error || 'Nepodařilo se provést akci')
+      if (pendingAction === 'reboot') {
+        setPowerCountdown(60)
+        showToast('Systém se restartuje...', 'success')
+      } else if (pendingAction === 'shutdown') {
+        setPowerCountdown(30)
+        showToast('Systém se vypíná...', 'success')
+      } else if (pendingAction === 'prune') {
+        showToast('Docker systém byl úspěšně vyčištěn', 'success')
       }
-
-      if (action === 'prune') {
-        showToast('Čištění Docker systému bylo spuštěno na pozadí.', 'success')
-        return
-      }
-
-      setPowerActionText(action === 'reboot' ? 'Restartování serveru...' : 'Vypínání serveru...')
-      setPowerCountdown(action === 'reboot' ? 45 : 20)
     } catch (err: any) {
-      showToast(err.message, 'error')
+      showToast(err.message || 'Akce se nezdařila', 'error')
+    } finally {
+      setPendingAction(null)
     }
-  }
-
-  if (powerCountdown !== null) {
-    return (
-      <div className="fixed inset-0 bg-[#09090b] flex flex-col items-center justify-center z-50 p-6 text-center">
-        <div className="w-20 h-20 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mb-6">
-          <RefreshCw className="w-10 h-10 text-cyan-400 animate-spin" />
-        </div>
-        <h2 className="text-2xl font-bold text-white mb-2">{powerActionText}</h2>
-        <p className="text-zinc-400 text-sm max-w-md">
-          {powerActionText.includes('Restart')
-            ? `Systém se restartuje. Stránka se automaticky obnoví za ${powerCountdown} sekund.`
-            : `Systém se vypíná. Můžeš bezpečně zavřít prohlížeč (odpočet: ${powerCountdown} s).`}
-        </p>
-      </div>
-    )
   }
 
   if (!data) {
     return <DashboardSkeleton />
   }
 
-  const ramPercent = data.ram_total > 0 ? (data.ram_used / data.ram_total) * 100 : 0
-  const ramUsedPercent = Math.round(ramPercent)
+  const ramPercent = data.ram_total ? Math.round((data.ram_used / data.ram_total) * 100) : 0
+  const ramUsedPercent = ramPercent
 
   const disks: DiskInfo[] =
-    data.disks && data.disks.length > 0
+    data.disks && Array.isArray(data.disks) && data.disks.length > 0
       ? data.disks
       : [
           {
             name: 'Systémový disk',
-            device: '/dev/root',
+            device: '/dev/mmcblk0p2',
             mountpoint: '/',
-            total_gb:
-              Math.round(
-                ((data.disk_free_gb || 0) / (1 - (data.disk_percent || 0) / 100 || 1)) * 10
-              ) / 10 || 32,
-            used_gb: Math.round((data.disk_free_gb || 0) * ((data.disk_percent || 0) / 100) * 10) / 10,
+            total_gb: (data.disk_free_gb || 0) + 15,
+            used_gb: 15,
             free_gb: data.disk_free_gb || 0,
             percent: data.disk_percent || 0,
             is_ssd: false,
@@ -200,7 +189,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Top Header & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Dashboard</h1>
 
         {canControlPower && (
           <div className="flex flex-wrap gap-2.5">
@@ -230,7 +219,7 @@ export default function DashboardPage() {
             <Button
               variant="danger"
               size="sm"
-              leftIcon={<Power className="w-3.5 h-3.5 text-rose-400" />}
+              leftIcon={<Power className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />}
               onClick={() =>
                 requestPowerAction('shutdown', 'Opravdu chceš úplně vypnout Raspberry Pi?')
               }
@@ -278,18 +267,18 @@ export default function DashboardPage() {
 
         <Card variant="bento" hover className="p-5 flex flex-col justify-between">
           <div className="flex items-start justify-between">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-black/30">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md text-white">
               <Gamepad2 className="w-5 h-5 text-white" />
             </div>
             <StatusBadge status={isMcOnline ? 'ONLINE' : 'OFFLINE'} />
           </div>
 
           <div>
-            <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block mb-1">
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block mb-1">
               Minecraft Server
             </span>
             <div className="flex items-center gap-2">
-              <span className={`text-xl font-bold ${isMcOnline ? 'text-emerald-400' : 'text-zinc-400'}`}>
+              <span className={`text-xl font-bold ${isMcOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-500 dark:text-zinc-400'}`}>
                 {data.mc_status || 'OFFLINE'}
               </span>
             </div>
@@ -304,8 +293,8 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-300">
-                  <Cpu className="w-4 h-4 text-cyan-400" />
+                <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-300">
+                  <Cpu className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
                 </div>
                 <CardTitle>Využití kapacity</CardTitle>
               </div>
@@ -334,8 +323,8 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-300">
-                  <Terminal className="w-4 h-4 text-emerald-400" />
+                <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-300">
+                  <Terminal className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
                 </div>
                 <CardTitle>Systémové informace</CardTitle>
               </div>
@@ -355,7 +344,7 @@ export default function DashboardPage() {
       <Card variant="bento" className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md text-white">
               <Database className="w-4 h-4 text-white" />
             </div>
             <CardTitle>Disky a Úložiště</CardTitle>
@@ -369,16 +358,16 @@ export default function DashboardPage() {
           {disks.map((disk, index) => (
             <div
               key={index}
-              className="rounded-xl bg-[#15151a] border border-zinc-800/80 p-4.5 hover:border-zinc-700 transition-all group"
+              className="rounded-xl bg-zinc-50 dark:bg-[#15151a] border border-zinc-200 dark:border-zinc-800/80 p-4.5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all group shadow-xs"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-9 h-9 rounded-lg ${
                       disk.is_ssd
-                        ? 'bg-gradient-to-br from-cyan-500 to-indigo-600 shadow-cyan-500/20'
-                        : 'bg-zinc-800 text-zinc-300'
-                    } flex items-center justify-center shadow-sm`}
+                        ? 'bg-gradient-to-br from-cyan-500 to-indigo-600 text-white'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300'
+                    } flex items-center justify-center shadow-xs`}
                   >
                     {disk.is_ssd ? (
                       <Zap className="w-4 h-4 text-white" />
@@ -388,7 +377,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-zinc-200 group-hover:text-cyan-400 transition-colors">
+                      <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
                         {disk.name}
                       </span>
                       {disk.is_ssd && (
@@ -397,23 +386,23 @@ export default function DashboardPage() {
                         </Badge>
                       )}
                     </div>
-                    <span className="text-[11px] font-mono text-zinc-400">
+                    <span className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400">
                       {disk.device} • {disk.mountpoint}
                     </span>
                   </div>
                 </div>
-                <span className="text-xs font-bold font-mono text-zinc-300">
+                <span className="text-xs font-bold font-mono text-zinc-700 dark:text-zinc-300">
                   {Math.round(disk.percent)}%
                 </span>
               </div>
 
               <div className="space-y-2 mt-3">
-                <div className="flex justify-between text-xs text-zinc-400">
+                <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
                   <span>
-                    Volno: <strong className="text-zinc-200">{disk.free_gb} GB</strong>
+                    Volno: <strong className="text-zinc-800 dark:text-zinc-200">{disk.free_gb} GB</strong>
                   </span>
                   <span>
-                    Celkem: <strong className="text-zinc-200">{disk.total_gb} GB</strong>
+                    Celkem: <strong className="text-zinc-800 dark:text-zinc-200">{disk.total_gb} GB</strong>
                   </span>
                 </div>
                 <ProgressBar value={disk.percent} size="sm" variant="auto" />
@@ -429,15 +418,15 @@ export default function DashboardPage() {
         onClose={() => setIsConfirmModalOpen(false)}
         maxWidth="max-w-md"
         title={
-          <div className="flex items-center gap-2 text-amber-400">
+          <div className="flex items-center gap-2 text-amber-500 dark:text-amber-400">
             <AlertTriangle className="w-5 h-5" />
-            <span className="text-white font-semibold text-base">Potvrzení akce</span>
+            <span className="text-zinc-900 dark:text-white font-semibold text-base">Potvrzení akce</span>
           </div>
         }
       >
-        <div className="p-6 space-y-6">
-          <p className="text-zinc-300 text-sm leading-relaxed">{confirmMessage}</p>
-          <div className="flex justify-end gap-3 pt-2">
+        <div className="p-6 space-y-6 bg-white dark:bg-[#0d0d10]">
+          <p className="text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed">{confirmMessage}</p>
+          <div className="flex justify-end gap-3 pt-2 border-t border-zinc-200 dark:border-zinc-800">
             <Button
               variant="outline"
               size="md"

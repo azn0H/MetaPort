@@ -61,21 +61,21 @@ function ToastItem({ toast, onRemove }: { toast: ToastMessage; onRemove: (id: nu
     <div
       className={`flex items-center gap-3 px-4 py-3 min-w-[300px] max-w-md rounded-2xl border backdrop-blur-xl shadow-2xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-5 ${
         isSuccess
-          ? 'bg-[#121215]/95 border-emerald-500/30 shadow-emerald-950/20'
-          : 'bg-[#121215]/95 border-rose-500/30 shadow-rose-950/20'
+          ? 'bg-white/95 dark:bg-[#121215]/95 border-emerald-500/30 text-zinc-900 dark:text-zinc-100 shadow-emerald-950/10'
+          : 'bg-white/95 dark:bg-[#121215]/95 border-rose-500/30 text-zinc-900 dark:text-zinc-100 shadow-rose-950/10'
       }`}
     >
       <div
         className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center ${
-          isSuccess ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
+          isSuccess ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
         }`}
       >
         {isSuccess ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
       </div>
-      <p className="flex-1 text-xs font-medium text-zinc-200">{toast.message}</p>
+      <p className="flex-1 text-xs font-medium text-zinc-800 dark:text-zinc-200">{toast.message}</p>
       <button
         onClick={() => onRemove(toast.id)}
-        className="shrink-0 text-zinc-500 hover:text-zinc-300 transition-colors p-1 rounded-lg hover:bg-zinc-800"
+        className="shrink-0 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
       >
         <X className="w-3.5 h-3.5" />
       </button>

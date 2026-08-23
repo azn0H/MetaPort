@@ -6,6 +6,8 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 from urllib.parse import parse_qs
+from collections import defaultdict
+import time
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -20,6 +22,28 @@ from database import User, get_db
 load_dotenv()
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Autentizace"])
+
+_login_attempts = defaultdict(list)
+MAX_LOGIN_ATTEMPTS = 5
+LOGIN_WINDOW_SECONDS = 60
+
+def check_login_rate_limit(client_ip: str):
+    now = time.time()
+    _login_attempts[client_ip] = [t for t in _login_attempts[client_ip] if now - t < LOGIN_WINDOW_SECONDS]
+    if len(_login_attempts[client_ip]) >= MAX_LOGIN_ATTEMPTS:
+        retry_after = max(1, int(LOGIN_WINDOW_SECONDS - (now - _login_attempts[client_ip][0])))
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Příliš mnoho neúspěšných pokusů o přihlášení. Zkuste to znovu za {retry_after} s.",
+            headers={"Retry-After": str(retry_after)},
+        )
+
+def record_failed_login(client_ip: str):
+    _login_attempts[client_ip].append(time.time())
+
+def clear_failed_logins(client_ip: str):
+    if client_ip in _login_attempts:
+        del _login_attempts[client_ip]
 
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback-klic")
 ALGORITHM = "HS256"
@@ -93,7 +117,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        sub: str = payload.get("sub")
+        sub: Optional[str] = payload.get("sub")
         if sub is None:
             raise credentials_exception
     except jwt.PyJWTError:
@@ -233,14 +257,19 @@ async def set_password(data: SetPasswordRequest, db: Session = Depends(get_db)):
     return {"msg": "Heslo bylo uspesne nastaveno. Nyni se muzete prihlasit."}
 
 @router.post("/token", response_model=Token)
-async def login_for_access_token(request: Request, db: Session = Depends(get_db)):
+async def login_for_access_token(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    client_ip = request.client.host if request.client else "unknown"
+    check_login_rate_limit(client_ip)
+
     email = None
     password = None
 
     body_bytes = await request.body()
     body_str = body_bytes.decode("utf-8", errors="ignore")
 
-    # 1. Try parsing JSON
     try:
         json_data = await request.json()
         if isinstance(json_data, dict):
@@ -249,7 +278,6 @@ async def login_for_access_token(request: Request, db: Session = Depends(get_db)
     except Exception:
         pass
 
-    # 2. Try parsing URL-encoded form data if JSON didn't yield email/password
     if not email or not password:
         try:
             parsed_form = parse_qs(body_str)
@@ -275,11 +303,14 @@ async def login_for_access_token(request: Request, db: Session = Depends(get_db)
 
     user = db.query(User).filter((User.email == email) | (User.username == email)).first()
     if not user or not verify_password(password, user.hashed_password):
+        record_failed_login(client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Nespravny email nebo heslo",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    clear_failed_logins(client_ip)
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(

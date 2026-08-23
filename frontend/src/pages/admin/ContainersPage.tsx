@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/Button'
 import { StatusBadge, Badge } from '../../components/ui/Badge'
 import { SearchInput } from '../../components/ui/Input'
 import { ContainerCardSkeleton } from '../../components/ui/Skeleton'
+import { API_BASE } from '../../config/api'
 
 interface Container {
   id: string
@@ -19,7 +20,7 @@ interface Container {
   stack: string
 }
 
-const API_URL = 'https://api-metaport.aznoh.cz/api/v1/containers'
+const API_URL = `${API_BASE}/api/v1/containers`
 
 export default function ContainersPage() {
   usePageTitle('Kontejnery')
@@ -116,35 +117,16 @@ export default function ContainersPage() {
     return passStatus && passStack && passSearch
   })
 
-  const runningCount = containers.filter((c) => c.status.toLowerCase() === 'running').length
-  const stoppedCount = containers.filter((c) =>
-    ['stopped', 'exited'].includes(c.status.toLowerCase())
-  ).length
-
   return (
     <div className="space-y-6">
-      {/* Header & Status Summary */}
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Kontejnery</h1>
-            <Badge variant="zinc">{containers.length}</Badge>
-          </div>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Kontejnery</h1>
+          <Badge variant="zinc">{containers.length}</Badge>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900/80 border border-zinc-800 text-xs">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              {runningCount} Běží
-            </span>
-            <span className="text-zinc-700">|</span>
-            <span className="flex items-center gap-1.5 text-rose-400 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-rose-500" />
-              {stoppedCount} Zastaveno
-            </span>
-          </div>
-
+        <div className="flex items-center gap-2">
           <Button
             variant="dark"
             size="sm"
@@ -157,7 +139,7 @@ export default function ContainersPage() {
       </div>
 
       {error && (
-        <div className="text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-xl p-4">
+        <div className="text-rose-600 dark:text-rose-400 text-xs bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl p-4">
           {error}
         </div>
       )}
@@ -165,15 +147,15 @@ export default function ContainersPage() {
       {/* Search & Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
         <div className="flex flex-wrap gap-2 items-center">
-          <div className="inline-flex p-1 bg-[#121215] border border-zinc-800 rounded-xl">
+          <div className="inline-flex p-1 bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xs">
             {(['all', 'running', 'stopped'] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setStatusFilter(f)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   statusFilter === f
-                    ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700/60'
-                    : 'text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs border border-zinc-300/80 dark:border-zinc-700/60'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
                 }`}
               >
                 {f === 'all' ? 'Všechny' : f === 'running' ? 'Běžící' : 'Zastavené'}
@@ -236,11 +218,11 @@ export default function ContainersPage() {
                         <Box className="w-5 h-5" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-sm font-bold text-white truncate" title={container.name}>
+                        <h3 className="text-sm font-bold text-zinc-900 dark:text-white truncate" title={container.name}>
                           {container.name}
                         </h3>
-                        <span className="text-[11px] text-zinc-400 flex items-center gap-1 mt-0.5">
-                          <Layers className="w-3 h-3 text-zinc-500" />
+                        <span className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 mt-0.5">
+                          <Layers className="w-3 h-3 text-zinc-400 dark:text-zinc-500" />
                           {container.stack || 'standalone'}
                         </span>
                       </div>
@@ -250,11 +232,11 @@ export default function ContainersPage() {
                   </div>
 
                   {/* Metadata Specs */}
-                  <div className="space-y-2 py-2 border-t border-b border-zinc-800/60 text-xs">
+                  <div className="space-y-2 py-2 border-t border-b border-zinc-200 dark:border-zinc-800/60 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="text-zinc-500">Image</span>
                       <span
-                        className="text-zinc-300 font-mono text-[11px] truncate max-w-[170px]"
+                        className="text-zinc-700 dark:text-zinc-300 font-mono text-[11px] truncate max-w-[170px]"
                         title={container.image}
                       >
                         {container.image}
@@ -263,7 +245,7 @@ export default function ContainersPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-zinc-500">Porty</span>
                       <span
-                        className="text-zinc-300 font-mono text-[11px] truncate max-w-[170px]"
+                        className="text-zinc-700 dark:text-zinc-300 font-mono text-[11px] truncate max-w-[170px]"
                         title={container.ports}
                       >
                         {container.ports || '—'}
@@ -271,7 +253,7 @@ export default function ContainersPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-zinc-500">Vytvořeno</span>
-                      <span className="text-zinc-400 text-[11px]">{container.created}</span>
+                      <span className="text-zinc-500 dark:text-zinc-400 text-[11px]">{container.created}</span>
                     </div>
                   </div>
                 </div>

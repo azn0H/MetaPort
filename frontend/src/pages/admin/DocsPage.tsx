@@ -5,6 +5,7 @@ import { Card } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { ProjectCardSkeleton } from '../../components/ui/Skeleton'
+import { API_BASE } from '../../config/api'
 
 interface DocSummary {
   id: string
@@ -17,7 +18,7 @@ interface DocDetail extends DocSummary {
   content: string
 }
 
-const API_URL = 'https://api-metaport.aznoh.cz/api/v1/docs'
+const API_URL = `${API_BASE}/api/v1/docs`
 
 const getProjectIcon = (id: string) => {
   switch (id) {
@@ -93,15 +94,15 @@ export default function DocsPage() {
         </Button>
 
         <Card variant="bento" className="p-6 md:p-8">
-          <div className="flex items-start gap-5 mb-8 pb-6 border-b border-zinc-800/80">
+          <div className="flex items-start gap-5 mb-8 pb-6 border-b border-zinc-200 dark:border-zinc-800/80">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
               <IconComponent className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white mb-2">
                 {activeDoc.name}
               </h1>
-              <p className="text-sm text-zinc-400 mb-4">{activeDoc.description}</p>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">{activeDoc.description}</p>
 
               <div className="flex flex-wrap gap-2 items-center">
                 <span className="text-xs text-zinc-500 flex items-center gap-1 mr-1">
@@ -117,7 +118,7 @@ export default function DocsPage() {
           </div>
 
           <div>
-            <pre className="whitespace-pre-wrap font-mono text-xs md:text-sm text-zinc-300 bg-[#09090b] p-6 rounded-2xl border border-zinc-800/80 leading-relaxed overflow-x-auto selection:bg-cyan-500/30">
+            <pre className="whitespace-pre-wrap font-mono text-xs md:text-sm text-zinc-800 dark:text-zinc-300 bg-zinc-50 dark:bg-[#09090b] p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800/80 leading-relaxed overflow-x-auto selection:bg-cyan-500/30">
               {activeDoc.content}
             </pre>
           </div>
@@ -131,14 +132,14 @@ export default function DocsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Dokumentace</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Dokumentace</h1>
             <Badge variant="zinc">{projects.length}</Badge>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-xl p-4">
+        <div className="text-rose-600 dark:text-rose-400 text-xs bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl p-4">
           {error}
         </div>
       )}
@@ -159,26 +160,26 @@ export default function DocsPage() {
                 type="button"
                 onClick={() => handleOpenDoc(doc.id)}
                 disabled={isDetailLoading}
-                className="text-left w-full rounded-2xl bg-[#121215] border border-zinc-800/80 p-6 hover:border-zinc-700 hover:bg-[#16161c] transition-all duration-200 group cursor-pointer flex flex-col justify-between shadow-sm"
+                className="text-left w-full rounded-2xl bg-white dark:bg-[#121215] border border-zinc-200 dark:border-zinc-800/80 p-6 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50/50 dark:hover:bg-[#16161c] transition-all duration-200 group cursor-pointer flex flex-col justify-between shadow-xs dark:shadow-sm"
               >
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20 shrink-0 group-hover:scale-105 transition-transform">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md text-white shrink-0 group-hover:scale-105 transition-transform">
                     <IconComponent className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">
+                      <h3 className="text-base font-bold text-zinc-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors">
                         {doc.name}
                       </h3>
-                      <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all shrink-0" />
+                      <ArrowRight className="w-4 h-4 text-zinc-400 dark:text-zinc-600 group-hover:text-cyan-500 dark:group-hover:text-cyan-400 group-hover:translate-x-1 transition-all shrink-0" />
                     </div>
-                    <p className="text-xs text-zinc-400 line-clamp-2 mt-1 leading-relaxed">
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 mt-1 leading-relaxed">
                       {doc.description}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-1.5 pt-3 border-t border-zinc-800/60">
+                <div className="flex flex-wrap gap-1.5 pt-3 border-t border-zinc-200 dark:border-zinc-800/60">
                   {doc.tech_stack.slice(0, 4).map((tech) => (
                     <Badge key={tech} variant="zinc" size="sm">
                       {tech}

@@ -1,24 +1,17 @@
 import { useState, useEffect } from 'react'
 import { UserPlus, AlertTriangle } from 'lucide-react'
-import UserList from '../../components/UserList'
-import UserInviteForm from '../../components/UserInviteForm'
-import { useToast } from '../../components/ToastProvider'
 import { usePageTitle } from '../../hooks/usePageTitle'
-import { Modal } from '../../components/Modal'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
-
-interface UserData {
-  id: number
-  username: string
-  first_name: string
-  last_name: string
-  email: string
-  role: string
-}
+import { Modal } from '../../components/Modal'
+import { useToast } from '../../components/ToastProvider'
+import UserList, { type UserData } from '../../components/UserList'
+import UserInviteForm from '../../components/UserInviteForm'
+import { API_BASE } from '../../config/api'
 
 export default function UsersPage() {
   usePageTitle('Uživatelé')
+
   const [users, setUsers] = useState<UserData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -35,7 +28,7 @@ export default function UsersPage() {
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]))
-        setCurrentUsername(payload.sub)
+        setCurrentUsername(payload.sub || '')
       } catch (e) {}
     }
     fetchUsers()
@@ -44,7 +37,7 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('jwt_token')
-      const response = await fetch('https://api-metaport.aznoh.cz/api/v1/auth/users', {
+      const response = await fetch(`${API_BASE}/api/v1/auth/users`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -65,7 +58,7 @@ export default function UsersPage() {
     try {
       const token = localStorage.getItem('jwt_token')
       const response = await fetch(
-        `https://api-metaport.aznoh.cz/api/v1/auth/users/${userId}/role`,
+        `${API_BASE}/api/v1/auth/users/${userId}/role`,
         {
           method: 'PUT',
           headers: {
@@ -97,7 +90,7 @@ export default function UsersPage() {
     try {
       const token = localStorage.getItem('jwt_token')
       const response = await fetch(
-        `https://api-metaport.aznoh.cz/api/v1/auth/users/${userToDelete.id}`,
+        `${API_BASE}/api/v1/auth/users/${userToDelete.id}`,
         {
           method: 'DELETE',
           headers: {
@@ -124,7 +117,7 @@ export default function UsersPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight text-white">Uživatelé</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Uživatelé</h1>
           <Badge variant="zinc">{users.length}</Badge>
         </div>
 
@@ -154,8 +147,8 @@ export default function UsersPage() {
         onClose={() => setIsInviteModalOpen(false)}
         maxWidth="max-w-lg"
         title={
-          <div className="flex items-center gap-2 text-white">
-            <UserPlus className="w-5 h-5 text-cyan-400" />
+          <div className="flex items-center gap-2 text-zinc-900 dark:text-white">
+            <UserPlus className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
             <span>Pozvat nového uživatele</span>
           </div>
         }
@@ -175,21 +168,21 @@ export default function UsersPage() {
         onClose={() => setIsDeleteModalOpen(false)}
         maxWidth="max-w-md"
         title={
-          <div className="flex items-center gap-2 text-rose-400">
+          <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
             <AlertTriangle className="w-5 h-5" />
             <span>Smazat uživatele</span>
           </div>
         }
       >
-        <div className="p-6 space-y-5 bg-[#0d0d10]">
-          <p className="text-zinc-300 text-xs leading-relaxed">
+        <div className="p-6 space-y-5 bg-white dark:bg-[#0d0d10]">
+          <p className="text-zinc-700 dark:text-zinc-300 text-xs leading-relaxed">
             Opravdu si přeješ trvale odstranit uživatele{' '}
-            <span className="font-bold text-white bg-zinc-800 px-2 py-0.5 rounded-md">
+            <span className="font-bold text-zinc-900 dark:text-white bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-700">
               {userToDelete?.username}
             </span>
             ? Tato akce je nevratná a odebere veškerá přístupová práva.
           </p>
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
             <Button variant="outline" size="sm" onClick={() => setIsDeleteModalOpen(false)}>
               Zrušit
             </Button>

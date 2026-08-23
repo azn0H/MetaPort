@@ -16,34 +16,34 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full space-y-1.5">
         {label && (
-          <label htmlFor={inputId} className="block text-xs font-semibold text-zinc-300">
+          <label htmlFor={inputId} className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
             {label}
           </label>
         )}
         <div className="relative flex items-center">
           {leftIcon && (
-            <div className="absolute left-3.5 flex items-center pointer-events-none text-zinc-400">
+            <div className="absolute left-3.5 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-400">
               {leftIcon}
             </div>
           )}
           <input
             id={inputId}
             ref={ref}
-            className={`w-full bg-[#121215] border border-zinc-800/80 rounded-xl px-3.5 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 transition-all duration-200 focus:outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20 disabled:opacity-50 disabled:bg-zinc-900 ${
+            className={`w-full bg-white dark:bg-[#121215] border border-zinc-300 dark:border-zinc-800/80 rounded-xl px-3.5 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 transition-all duration-200 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 disabled:opacity-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-900 ${
               leftIcon ? 'pl-10' : ''
             } ${rightIcon ? 'pr-10' : ''} ${error ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/20' : ''} ${className}`}
             {...props}
           />
           {rightIcon && (
-            <div className="absolute right-3.5 flex items-center pointer-events-none text-zinc-400">
+            <div className="absolute right-3.5 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-400">
               {rightIcon}
             </div>
           )}
         </div>
         {error ? (
-          <p className="text-xs text-rose-400 mt-1">{error}</p>
+          <p className="text-xs text-rose-500 dark:text-rose-400 mt-1">{error}</p>
         ) : helperText ? (
-          <p className="text-xs text-zinc-500 mt-1">{helperText}</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-1">{helperText}</p>
         ) : null}
       </div>
     )
@@ -59,10 +59,10 @@ export interface SearchInputProps extends React.InputHTMLAttributes<HTMLInputEle
 export function SearchInput({ className = '', ...props }: SearchInputProps) {
   return (
     <div className="relative flex items-center w-full max-w-xs">
-      <Search className="w-4 h-4 absolute left-3.5 text-zinc-400 pointer-events-none" />
+      <Search className="w-4 h-4 absolute left-3.5 text-zinc-400 dark:text-zinc-400 pointer-events-none" />
       <input
         type="text"
-        className={`w-full bg-zinc-900/80 border border-zinc-800 rounded-xl pl-9.5 pr-3.5 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 transition-all duration-200 focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600/30 ${className}`}
+        className={`w-full bg-white dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-800 rounded-xl pl-9.5 pr-3.5 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 transition-all duration-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 ${className}`}
         {...props}
       />
     </div>

@@ -1,5 +1,5 @@
 interface ProgressBarProps {
-  value: number // 0 to 100
+  value: number
   max?: number
   variant?: 'auto' | 'cyan' | 'blue' | 'emerald' | 'amber' | 'rose' | 'purple'
   size?: 'sm' | 'md' | 'lg'
@@ -86,13 +86,13 @@ export function ProgressBar({
   return (
     <div className={`w-full space-y-1.5 ${className}`}>
       {showLabel && (
-        <div className="flex justify-between items-center text-xs text-zinc-400">
+        <div className="flex justify-between items-center text-xs text-zinc-600 dark:text-zinc-400">
           <span>Progres</span>
-          <span className="font-mono font-medium text-zinc-200">{Math.round(percentage)}%</span>
+          <span className="font-mono font-medium text-zinc-900 dark:text-zinc-200">{Math.round(percentage)}%</span>
         </div>
       )}
       <div
-        className={`w-full ${sizeClasses[size]} bg-zinc-800/90 rounded-full overflow-hidden border border-zinc-700/40`}
+        className={`w-full ${sizeClasses[size]} bg-zinc-200 dark:bg-zinc-800/90 rounded-full overflow-hidden border border-zinc-300/80 dark:border-zinc-700/40`}
       >
         <div
           className="h-full rounded-full transition-all duration-500 ease-out"

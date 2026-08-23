@@ -11,8 +11,7 @@ import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { PortalLinkSkeleton, Skeleton } from '../../components/ui/Skeleton'
-
-const API_BASE = 'https://api-metaport.aznoh.cz'
+import { API_BASE } from '../../config/api'
 
 type TabType = 'links' | 'settings'
 
@@ -204,7 +203,7 @@ export default function PortalManagerPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Rozcestník</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Rozcestník</h1>
             <Badge variant="zinc">{links.length}</Badge>
           </div>
         </div>
