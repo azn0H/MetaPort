@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { LayoutGrid, UserPlus, AlertTriangle } from 'lucide-react'
+import { UserPlus, AlertTriangle } from 'lucide-react'
 import UserList from '../../components/UserList'
 import UserInviteForm from '../../components/UserInviteForm'
 import { useToast } from '../../components/ToastProvider'
 import { usePageTitle } from '../../hooks/usePageTitle'
 import { Modal } from '../../components/Modal'
+import { Badge } from '../../components/ui/Badge'
+import { Button } from '../../components/ui/Button'
 
 interface UserData {
   id: number
@@ -15,19 +17,17 @@ interface UserData {
   role: string
 }
 
-type TabType = 'list' | 'invite'
-
 export default function UsersPage() {
   usePageTitle('Uživatelé')
-  const [activeTab, setActiveTab] = useState<TabType>('list')
   const [users, setUsers] = useState<UserData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [currentUsername, setCurrentUsername] = useState('')
 
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [userToDelete, setUserToDelete] = useState<{id: number, username: string} | null>(null)
-  
+  const [userToDelete, setUserToDelete] = useState<{ id: number; username: string } | null>(null)
+
   const { showToast } = useToast()
 
   useEffect(() => {
@@ -46,12 +46,12 @@ export default function UsersPage() {
       const token = localStorage.getItem('jwt_token')
       const response = await fetch('https://api-metaport.aznoh.cz/api/v1/auth/users', {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
-      
+
       if (!response.ok) throw new Error('Nelze načíst uživatele')
-      
+
       const data = await response.json()
       setUsers(data)
     } catch (err) {
@@ -64,18 +64,21 @@ export default function UsersPage() {
   const handleRoleChange = async (userId: number, newRole: string) => {
     try {
       const token = localStorage.getItem('jwt_token')
-      const response = await fetch(`https://api-metaport.aznoh.cz/api/v1/auth/users/${userId}/role`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ role: newRole })
-      })
+      const response = await fetch(
+        `https://api-metaport.aznoh.cz/api/v1/auth/users/${userId}/role`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ role: newRole }),
+        }
+      )
 
       const data = await response.json()
       if (!response.ok) throw new Error(data.detail || 'Nepodařilo se změnit roli')
-      
+
       showToast('Role byla úspěšně změněna.', 'success')
       fetchUsers()
     } catch (err: any) {
@@ -93,16 +96,19 @@ export default function UsersPage() {
 
     try {
       const token = localStorage.getItem('jwt_token')
-      const response = await fetch(`https://api-metaport.aznoh.cz/api/v1/auth/users/${userToDelete.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        `https://api-metaport.aznoh.cz/api/v1/auth/users/${userToDelete.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      })
+      )
 
       const data = await response.json()
       if (!response.ok) throw new Error(data.detail || 'Nepodařilo se smazat uživatele')
-      
+
       showToast(`Uživatel ${userToDelete.username} byl trvale smazán.`, 'success')
       fetchUsers()
     } catch (err: any) {
@@ -115,61 +121,53 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Admin panel</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-white">Uživatelé</h1>
+          <Badge variant="zinc">{users.length}</Badge>
         </div>
 
-        {/* Tab Switcher Buttons */}
-        <div className="inline-flex p-1 bg-slate-900 border border-slate-800 rounded-xl">
-          <button
-            onClick={() => setActiveTab('list')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-              activeTab === 'list' 
-                ? 'bg-slate-800 text-white shadow-sm' 
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
-          >
-            <LayoutGrid className="w-3.5 h-3.5" />
-            <span>Seznam všech uživatelů</span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('invite')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-              activeTab === 'invite' 
-                ? 'bg-slate-800 text-white shadow-sm' 
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
-          >
-            <UserPlus className="w-3.5 h-3.5" />
+        <Button
+          variant="magic"
+          size="sm"
+          leftIcon={<UserPlus className="w-4 h-4" />}
+          onClick={() => setIsInviteModalOpen(true)}
+        >
+          Pozvat uživatele
+        </Button>
+      </div>
+
+      {/* Main User List */}
+      <UserList
+        users={users}
+        isLoading={isLoading}
+        error={error}
+        currentUsername={currentUsername}
+        onRoleChange={handleRoleChange}
+        onDelete={handleDeleteClick}
+      />
+
+      {/* Invite User Modal */}
+      <Modal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+        maxWidth="max-w-lg"
+        title={
+          <div className="flex items-center gap-2 text-white">
+            <UserPlus className="w-5 h-5 text-cyan-400" />
             <span>Pozvat nového uživatele</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Tab Content Area */}
-      <div>
-        {activeTab === 'list' ? (
-          <UserList 
-            users={users} 
-            isLoading={isLoading} 
-            error={error} 
-            currentUsername={currentUsername}
-            onRoleChange={handleRoleChange}
-            onDelete={handleDeleteClick}
-          />
-        ) : (
-          <UserInviteForm 
-            onSuccess={() => {
-              fetchUsers()
-              setActiveTab('list')
-            }} 
-          />
-        )}
-      </div>
+          </div>
+        }
+      >
+        <UserInviteForm
+          onSuccess={() => {
+            fetchUsers()
+            setIsInviteModalOpen(false)
+          }}
+          onCancel={() => setIsInviteModalOpen(false)}
+        />
+      </Modal>
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -177,34 +175,30 @@ export default function UsersPage() {
         onClose={() => setIsDeleteModalOpen(false)}
         maxWidth="max-w-md"
         title={
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-500" />
-            <span className="text-white font-semibold text-base">Smazat uživatele</span>
+          <div className="flex items-center gap-2 text-rose-400">
+            <AlertTriangle className="w-5 h-5" />
+            <span>Smazat uživatele</span>
           </div>
         }
       >
-        <div className="p-6 space-y-6">
-          <p className="text-slate-300 text-sm leading-relaxed">
-            Opravdu si přeješ trvale odstranit uživatele <span className="font-bold text-white bg-slate-800 px-2 py-0.5 rounded">{userToDelete?.username}</span>? Tato akce je nevratná.
+        <div className="p-6 space-y-5 bg-[#0d0d10]">
+          <p className="text-zinc-300 text-xs leading-relaxed">
+            Opravdu si přeješ trvale odstranit uživatele{' '}
+            <span className="font-bold text-white bg-zinc-800 px-2 py-0.5 rounded-md">
+              {userToDelete?.username}
+            </span>
+            ? Tato akce je nevratná a odebere veškerá přístupová práva.
           </p>
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-            <button
-              onClick={() => setIsDeleteModalOpen(false)}
-              className="px-4 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-            >
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
+            <Button variant="outline" size="sm" onClick={() => setIsDeleteModalOpen(false)}>
               Zrušit
-            </button>
-            <button
-              onClick={confirmDelete}
-              className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium transition-colors shadow-sm"
-            >
-              Smazat
-            </button>
+            </Button>
+            <Button variant="danger" size="sm" onClick={confirmDelete}>
+              Smazat uživatele
+            </Button>
           </div>
         </div>
       </Modal>
-
     </div>
   )
 }
-

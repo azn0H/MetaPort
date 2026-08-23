@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Globe } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Globe, ArrowUpRight, ShieldCheck } from 'lucide-react'
 import MetafraLogo from '@/icons/Metafra_bez_text.svg'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { ICON_MAP } from '../components/portal/portalTypes'
@@ -8,9 +9,9 @@ const API_BASE = 'https://api-metaport.aznoh.cz'
 
 const defaultSettings = {
   title: 'METAFRA',
-  subtitle: 'MetaPort - Rozcestník a Raspberry Pi management dashboard',
+  subtitle: 'MetaPort - Rozcestník',
   version: 'v1.0',
-  footer_text: 'MetaPort {version} © {year} aznoH.cz'
+  footer_text: 'MetaPort {version} © {year} aznoH.cz',
 }
 
 function getInitialSettings() {
@@ -73,89 +74,98 @@ function HomePage() {
     : `MetaPort ${settings.version || 'v1.0'} © ${currentYear} aznoH.cz`
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-      <div className="w-full max-w-4xl">
-        <div className="text-center mb-12">
-          <img 
-            src={MetafraLogo} 
-            alt={settings.title || 'MetaPort'} 
-            className="h-16 md:h-30 w-auto mx-auto mb-4" 
+    <div className="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col justify-between p-6 sm:p-10 selection:bg-cyan-500/20 selection:text-cyan-300">
+      {/* Top Navbar */}
+      <header className="max-w-5xl w-full mx-auto flex items-center justify-between z-10 mb-8">
+        <div className="flex items-center gap-3">
+          <img
+            src={MetafraLogo}
+            alt={settings.title || 'MetaPort'}
+            className="h-8 w-auto object-contain brightness-110"
           />
-          <p className="text-slate-400 text-lg">
+          <span className="text-sm font-bold tracking-tight text-white hidden sm:inline">
+            MetaPort
+          </span>
+        </div>
+
+        <Link
+          to="/admin"
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition-all shadow-sm cursor-pointer"
+        >
+          <ShieldCheck className="w-4 h-4 text-cyan-400" />
+          <span>Administrace</span>
+        </Link>
+      </header>
+
+      {/* Hero Section */}
+      <main className="max-w-5xl w-full mx-auto z-10 my-auto py-8">
+        <div className="text-center mb-12 space-y-3">
+          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
+            {settings.title || 'METAFRA HUB'}
+          </h1>
+          <p className="text-sm sm:text-base text-zinc-400 max-w-xl mx-auto">
             {settings.subtitle}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {isLoading ? (
-            Array.from({ length: 4 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="relative overflow-hidden rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm animate-pulse flex items-start gap-4"
-              >
-                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-slate-800" />
-                <div className="flex-1 space-y-2 py-1">
-                  <div className="h-5 bg-slate-800 rounded w-1/3" />
-                  <div className="h-4 bg-slate-800 rounded w-3/4" />
-                </div>
-              </div>
-            ))
-          ) : (
-            apps.map((app) => {
-            const IconComponent = ICON_MAP[app.icon] || Globe
-            return (
-              <a
-                key={app.id}
-                href={app.url}
-                target={app.is_external !== false ? '_blank' : '_self'}
-                rel="noopener noreferrer"
-                className="group relative overflow-hidden rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm transition-all duration-300 hover:border-slate-700 hover:bg-slate-900/80 hover:scale-[1.02] hover:shadow-xl hover:shadow-slate-900/50"
-              >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300">
-                  <div className={`w-full h-full bg-gradient-to-br ${app.gradient || 'from-cyan-500 to-blue-600'}`} />
-                </div>
-
-                <div className="relative flex items-start gap-4">
-                  <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${app.gradient || 'from-cyan-500 to-blue-600'} flex items-center justify-center shadow-lg`}>
-                    <IconComponent className="w-6 h-6 text-white" />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-xl font-semibold text-white mb-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-slate-300 transition-all duration-300">
-                      {app.title}
-                    </h2>
-                    <p className="text-slate-400 text-sm leading-relaxed">
-                      {app.description}
-                    </p>
+        {/* Bento Apps Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          {isLoading
+            ? Array.from({ length: 6 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-2xl bg-[#121215] border border-zinc-800/80 p-5 space-y-4 animate-pulse"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-xl bg-zinc-800" />
+                    <div className="space-y-1.5 flex-1">
+                      <div className="h-4 bg-zinc-800 rounded w-1/2" />
+                      <div className="h-3 bg-zinc-800 rounded w-3/4" />
+                    </div>
                   </div>
                 </div>
-
-                <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <svg
-                    className="w-5 h-5 text-slate-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+              ))
+            : apps.map((app) => {
+                const IconComponent = ICON_MAP[app.icon] || Globe
+                return (
+                  <a
+                    key={app.id}
+                    href={app.url}
+                    target={app.is_external !== false ? '_blank' : '_self'}
+                    rel="noopener noreferrer"
+                    className="group relative overflow-hidden rounded-2xl bg-[#121215] border border-zinc-800/80 p-5 transition-all duration-300 hover:border-zinc-700 hover:bg-[#16161d] hover:scale-[1.02] flex flex-col justify-between"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M14 5l7 7m0 0l-7 7m7-7H3"
-                    />
-                  </svg>
-                </div>
-              </a>
-            )
-          }))}
-        </div>
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${
+                          app.gradient || 'from-cyan-500 to-blue-600'
+                        } flex items-center justify-center shadow-md text-white group-hover:scale-105 transition-transform duration-300`}
+                      >
+                        <IconComponent className="w-6 h-6" />
+                      </div>
 
-        <div className="mt-12 text-center">
-          <p className="text-slate-600 text-sm">
-            {renderedFooter}
-          </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <h2 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors truncate">
+                            {app.title}
+                          </h2>
+                          <ArrowUpRight className="w-4 h-4 text-zinc-500 group-hover:text-cyan-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+                        </div>
+                        <p className="text-xs text-zinc-400 mt-1 line-clamp-2 leading-relaxed">
+                          {app.description}
+                        </p>
+                      </div>
+                    </div>
+                  </a>
+                )
+              })}
         </div>
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="max-w-5xl w-full mx-auto text-center py-6 border-t border-zinc-800/60 z-10 mt-8">
+        <p className="text-xs text-zinc-500 font-medium">{renderedFooter}</p>
+      </footer>
     </div>
   )
 }

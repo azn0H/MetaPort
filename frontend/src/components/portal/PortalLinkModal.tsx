@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Boxes, Globe, Loader2 } from 'lucide-react'
+import { Boxes, Globe } from 'lucide-react'
 import { Modal } from '../Modal'
 import { ICON_MAP, GRADIENT_OPTIONS, type PortalLink } from './portalTypes'
+import { Input } from '../ui/Input'
+import { Button } from '../ui/Button'
 
 interface PortalLinkModalProps {
   isOpen: boolean
@@ -22,7 +24,7 @@ export function PortalLinkModal({
   isOpen,
   onClose,
   editingLink,
-  onSave
+  onSave,
 }: PortalLinkModalProps) {
   const [formData, setFormData] = useState({
     title: '',
@@ -31,7 +33,7 @@ export function PortalLinkModal({
     icon: 'Globe',
     gradient: 'from-cyan-500 to-blue-600',
     is_active: true,
-    is_external: true
+    is_external: true,
   })
   const [isSaving, setIsSaving] = useState(false)
 
@@ -44,7 +46,7 @@ export function PortalLinkModal({
         icon: editingLink.icon,
         gradient: editingLink.gradient,
         is_active: editingLink.is_active,
-        is_external: editingLink.is_external
+        is_external: editingLink.is_external,
       })
     } else {
       setFormData({
@@ -54,7 +56,7 @@ export function PortalLinkModal({
         icon: 'Globe',
         gradient: 'from-cyan-500 to-blue-600',
         is_active: true,
-        is_external: true
+        is_external: true,
       })
     }
   }, [editingLink, isOpen])
@@ -78,70 +80,66 @@ export function PortalLinkModal({
       maxWidth="max-w-xl"
       title={
         <div className="flex items-center gap-2 text-white font-semibold text-base">
-          <Boxes className="w-5 h-5 text-sky-400" />
+          <Boxes className="w-5 h-5 text-cyan-400" />
           <span>{editingLink ? 'Upravit box rozcestníku' : 'Přidat nový box'}</span>
         </div>
       }
     >
-      <form onSubmit={handleSubmit} className="p-6 space-y-5 bg-slate-900">
-        <div className="rounded-xl bg-slate-950/70 border border-slate-800 p-4 flex items-start gap-3.5">
-          <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${formData.gradient} flex items-center justify-center shadow-md flex-shrink-0`}>
+      <form onSubmit={handleSubmit} className="p-6 space-y-5 bg-[#0d0d10]">
+        {/* Live Preview Tile */}
+        <div className="rounded-2xl bg-[#121215] border border-zinc-800/80 p-4 flex items-start gap-3.5 shadow-sm">
+          <div
+            className={`w-11 h-11 rounded-xl bg-gradient-to-br ${formData.gradient} flex items-center justify-center shadow-md shrink-0`}
+          >
             <PreviewIcon className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="text-white font-semibold text-sm">
+            <h4 className="text-white font-bold text-sm">
               {formData.title || 'Název aplikace'}
             </h4>
-            <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">
-              {formData.description || 'Popisek aplikace zobrazený pod názvem'}
+            <p className="text-zinc-400 text-xs mt-0.5 leading-relaxed truncate">
+              {formData.description || 'Popisek aplikace zobrazený na kartě'}
             </p>
-            <span className="text-[11px] text-sky-400 block mt-1">
+            <span className="text-[11px] text-cyan-400 block mt-1 font-mono truncate">
               {formData.url || 'https://example.com'}
             </span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Název</label>
-            <input
-              type="text"
-              required
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full bg-slate-950/50 border border-slate-800 rounded-lg py-2.5 px-4 text-slate-200 text-sm focus:outline-none focus:border-slate-600 transition-all"
-              placeholder="TaskApp"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">URL adresa</label>
-            <input
-              type="url"
-              required
-              value={formData.url}
-              onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-              className="w-full bg-slate-950/50 border border-slate-800 rounded-lg py-2.5 px-4 text-slate-200 text-sm focus:outline-none focus:border-slate-600 transition-all"
-              placeholder="https://..."
-            />
-          </div>
+          <Input
+            label="Název"
+            required
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            placeholder="Nextcloud Hub"
+          />
+          <Input
+            label="URL adresa"
+            type="url"
+            required
+            value={formData.url}
+            onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+            placeholder="https://..."
+          />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Popis</label>
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-zinc-300">Popis</label>
           <textarea
             rows={2}
             required
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="w-full bg-slate-950/50 border border-slate-800 rounded-lg py-2.5 px-4 text-slate-200 text-sm focus:outline-none focus:border-slate-600 transition-all resize-none"
+            className="w-full bg-[#121215] border border-zinc-800/80 rounded-xl p-3 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/20 resize-none transition-all"
             placeholder="Krátký popis odkazu..."
           />
         </div>
 
+        {/* Icon Selector */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">Ikona</label>
-          <div className="grid grid-cols-6 sm:grid-cols-9 gap-2 max-h-36 overflow-y-auto p-1 bg-slate-950/30 rounded-xl border border-slate-800/50">
+          <label className="block text-xs font-semibold text-zinc-300 mb-2">Ikona</label>
+          <div className="grid grid-cols-6 sm:grid-cols-9 gap-1.5 max-h-36 overflow-y-auto p-1.5 bg-[#121215] rounded-xl border border-zinc-800">
             {Object.entries(ICON_MAP).map(([iconName, IconComp]) => {
               const isSelected = formData.icon === iconName
               return (
@@ -149,23 +147,26 @@ export function PortalLinkModal({
                   key={iconName}
                   type="button"
                   onClick={() => setFormData({ ...formData, icon: iconName })}
-                  className={`p-2.5 rounded-lg border flex flex-col items-center justify-center transition-all ${
+                  className={`p-2.5 rounded-lg border flex flex-col items-center justify-center transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-sky-500/10 border-sky-500 text-sky-400'
-                      : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                      ? 'bg-cyan-500/20 border-cyan-500/60 text-cyan-300 shadow-sm'
+                      : 'bg-zinc-900/60 border-zinc-800/80 text-zinc-400 hover:text-white hover:bg-zinc-800'
                   }`}
                   title={iconName}
                 >
-                  <IconComp className="w-5 h-5" />
+                  <IconComp className="w-4 h-4" />
                 </button>
               )
             })}
           </div>
         </div>
 
+        {/* Gradient Theme Selector */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">Barevný přechod</label>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 max-h-32 overflow-y-auto p-1 bg-slate-950/30 rounded-xl border border-slate-800/50">
+          <label className="block text-xs font-semibold text-zinc-300 mb-2">
+            Barevný přechod
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 max-h-32 overflow-y-auto p-1.5 bg-[#121215] rounded-xl border border-zinc-800">
             {GRADIENT_OPTIONS.map((grad) => {
               const isSelected = formData.gradient === grad.value
               return (
@@ -173,58 +174,50 @@ export function PortalLinkModal({
                   key={grad.value}
                   type="button"
                   onClick={() => setFormData({ ...formData, gradient: grad.value })}
-                  className={`p-2 rounded-lg border flex items-center gap-2 transition-all ${
+                  className={`p-2 rounded-lg border flex items-center gap-2 transition-all cursor-pointer ${
                     isSelected
-                      ? 'border-sky-500 bg-slate-800 text-white font-medium'
-                      : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
+                      ? 'border-cyan-500 bg-zinc-800 text-white font-semibold'
+                      : 'border-zinc-800/80 bg-zinc-900/40 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
                   }`}
                 >
-                  <div className={`w-3.5 h-3.5 rounded-full ${grad.class} flex-shrink-0`} />
-                  <span className="text-xs truncate">{grad.label}</span>
+                  <div className={`w-3 h-3 rounded-full ${grad.class} shrink-0`} />
+                  <span className="text-[11px] truncate">{grad.label}</span>
                 </button>
               )
             })}
           </div>
         </div>
 
-        <div className="flex items-center gap-6 pt-2">
-          <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+        {/* Switches */}
+        <div className="flex items-center gap-6 pt-1 text-xs text-zinc-300">
+          <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={formData.is_active}
               onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-              className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-sky-500 focus:ring-0"
+              className="w-4 h-4 rounded bg-[#121215] border-zinc-800 text-cyan-500 focus:ring-0"
             />
             <span>Zobrazit na rozcestníku</span>
           </label>
 
-          <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+          <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={formData.is_external}
               onChange={(e) => setFormData({ ...formData, is_external: e.target.checked })}
-              className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-sky-500 focus:ring-0"
+              className="w-4 h-4 rounded bg-[#121215] border-zinc-800 text-cyan-500 focus:ring-0"
             />
             <span>Otevírat v novém okně</span>
           </label>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors"
-          >
+        <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800/80">
+          <Button variant="outline" size="md" type="button" onClick={onClose}>
             Zrušit
-          </button>
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="bg-sky-600 text-white font-medium py-2 px-5 rounded-lg hover:bg-sky-500 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
-          >
-            {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-            <span>{editingLink ? 'Uložit změny' : 'Vytvořit box'}</span>
-          </button>
+          </Button>
+          <Button variant="magic" size="md" type="submit" isLoading={isSaving}>
+            {editingLink ? 'Uložit změny' : 'Vytvořit box'}
+          </Button>
         </div>
       </form>
     </Modal>

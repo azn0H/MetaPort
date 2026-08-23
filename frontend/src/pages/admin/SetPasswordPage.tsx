@@ -1,6 +1,10 @@
 import { useState, useEffect, type FormEvent } from 'react'
-import { KeyRound, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { KeyRound, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { usePageTitle } from '../../hooks/usePageTitle'
+import { Card } from '../../components/ui/Card'
+import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
 
 export default function SetPasswordPage() {
   usePageTitle('Nastavení hesla')
@@ -24,7 +28,7 @@ export default function SetPasswordPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
-    
+
     if (password.length < 8) {
       setError('Heslo musí mít alespoň 8 znaků.')
       return
@@ -62,78 +66,81 @@ export default function SetPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center shadow-2xl">
-          <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-          <h1 className="text-xl font-bold text-white mb-2">Heslo bylo nastaveno!</h1>
-          <p className="text-slate-400 text-sm mb-6">Nyní se můžete přihlásit do svého účtu.</p>
-          <a
-            href="/login"
-            className="block w-full text-center bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold py-2.5 px-4 rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all text-sm"
-          >
-            Přejít na přihlášení
-          </a>
+      <div className="min-h-screen bg-[#09090b] text-zinc-100 flex items-center justify-center p-6">
+        <div className="w-full max-w-md">
+          <Card variant="bento" className="p-8 text-center shadow-xl">
+            <div className="w-10 h-10 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <h1 className="text-xl font-bold text-white mb-2">Heslo nastaveno</h1>
+            <p className="text-zinc-400 text-xs mb-6">
+              Nyní se můžete přihlásit do svého účtu.
+            </p>
+            <Link to="/login" className="block w-full">
+              <Button variant="magic" size="lg" className="w-full" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                Přejít na přihlášení
+              </Button>
+            </Link>
+          </Card>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-            <KeyRound className="w-5 h-5 text-white" />
+    <div className="min-h-screen bg-[#09090b] text-zinc-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        <Card variant="bento" className="p-8 shadow-xl">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800/80">
+            <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-200">
+              <KeyRound className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">Nastavení hesla</h1>
+              <p className="text-zinc-400 text-xs">Aktivace nového účtu</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">Aktivace účtu</h1>
-            <p className="text-slate-400 text-xs">Nastavte si přístupové heslo</p>
-          </div>
-        </div>
 
-        {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+          {error && (
+            <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Nové heslo</label>
-            <input
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="Nové heslo"
               type="password"
               required
               disabled={!!error && !token}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl py-2 px-4 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-50"
+              placeholder="Minimálně 8 znaků"
             />
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Potvrzení hesla</label>
-            <input
+            <Input
+              label="Potvrzení hesla"
               type="password"
               required
               disabled={!!error && !token}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl py-2 px-4 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-50"
+              placeholder="Zopakujte heslo"
             />
-          </div>
 
-          <button
-            type="submit"
-            disabled={isLoading || (!!error && !token)}
-            className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold py-2.5 px-4 rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all text-sm mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-            Aktivovat účet
-          </button>
-        </form>
+            <Button
+              type="submit"
+              variant="magic"
+              size="lg"
+              className="w-full mt-2"
+              disabled={isLoading || (!!error && !token)}
+              isLoading={isLoading}
+            >
+              Aktivovat účet
+            </Button>
+          </form>
+        </Card>
       </div>
     </div>
   )

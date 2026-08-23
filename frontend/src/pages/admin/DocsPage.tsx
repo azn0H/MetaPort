@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
-import { FileText, Book, Code, Terminal, ChevronLeft, Layers } from 'lucide-react'
+import { FileText, Book, Code, Terminal, ChevronLeft, Layers, ArrowRight } from 'lucide-react'
 import { usePageTitle } from '../../hooks/usePageTitle'
+import { Card } from '../../components/ui/Card'
+import { Badge } from '../../components/ui/Badge'
+import { Button } from '../../components/ui/Button'
+import { ProjectCardSkeleton } from '../../components/ui/Skeleton'
 
 interface DocSummary {
   id: string
@@ -17,16 +21,20 @@ const API_URL = 'https://api-metaport.aznoh.cz/api/v1/docs'
 
 const getProjectIcon = (id: string) => {
   switch (id) {
-    case 'metaport': return Terminal
-    case 'qrco': return Code
-    case 'bookiva': return Book
-    default: return FileText
+    case 'metaport':
+      return Terminal
+    case 'qrco':
+      return Code
+    case 'bookiva':
+      return Book
+    default:
+      return FileText
   }
 }
 
 export default function DocsPage() {
   usePageTitle('Dokumentace')
-  
+
   const [projects, setProjects] = useState<DocSummary[]>([])
   const [activeDoc, setActiveDoc] = useState<DocDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -41,7 +49,7 @@ export default function DocsPage() {
     try {
       const token = localStorage.getItem('jwt_token')
       const response = await fetch(API_URL, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       })
       if (!response.ok) throw new Error('Nepodařilo se načíst dokumentace')
       const data = await response.json()
@@ -59,7 +67,7 @@ export default function DocsPage() {
     try {
       const token = localStorage.getItem('jwt_token')
       const response = await fetch(`${API_URL}/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       })
       if (!response.ok) throw new Error('Nepodařilo se načíst detail dokumentace')
       const data = await response.json()
@@ -75,55 +83,62 @@ export default function DocsPage() {
     const IconComponent = getProjectIcon(activeDoc.id)
     return (
       <div className="space-y-6">
-        <button 
+        <Button
+          variant="ghost"
+          size="sm"
+          leftIcon={<ChevronLeft className="w-4 h-4" />}
           onClick={() => setActiveDoc(null)}
-          className="flex items-center gap-2 text-slate-400 hover:text-cyan-400 transition-colors"
         >
-          <ChevronLeft className="w-5 h-5" />
-          Zpět na přehled
-        </button>
+          Zpět na přehled dokumentací
+        </Button>
 
-        <div className="rounded-2xl bg-slate-900/50 border border-slate-800 p-8 backdrop-blur-sm">
-          <div className="flex items-start gap-5 mb-8 pb-8 border-b border-slate-800">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
-              <IconComponent className="w-8 h-8 text-white" />
+        <Card variant="bento" className="p-6 md:p-8">
+          <div className="flex items-start gap-5 mb-8 pb-6 border-b border-zinc-800/80">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
+              <IconComponent className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">{activeDoc.name}</h1>
-              <p className="text-slate-400 text-lg mb-4">{activeDoc.description}</p>
-              
-              <div className="flex flex-wrap gap-2 mt-2">
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-800/80 text-slate-300 rounded-lg text-sm mr-2">
-                  <Layers className="w-4 h-4" /> Stack:
-                </div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">
+                {activeDoc.name}
+              </h1>
+              <p className="text-sm text-zinc-400 mb-4">{activeDoc.description}</p>
+
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-xs text-zinc-500 flex items-center gap-1 mr-1">
+                  <Layers className="w-3.5 h-3.5" /> Stack:
+                </span>
                 {activeDoc.tech_stack.map((tech) => (
-                  <span key={tech} className="px-3 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-lg text-sm font-medium">
+                  <Badge key={tech} variant="cyan" size="sm">
                     {tech}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="prose prose-invert prose-cyan max-w-none">
-            <pre className="whitespace-pre-wrap font-mono text-sm text-slate-300 bg-slate-950 p-6 rounded-xl border border-slate-800">
+          <div>
+            <pre className="whitespace-pre-wrap font-mono text-xs md:text-sm text-zinc-300 bg-[#09090b] p-6 rounded-2xl border border-zinc-800/80 leading-relaxed overflow-x-auto selection:bg-cyan-500/30">
               {activeDoc.content}
             </pre>
           </div>
-        </div>
+        </Card>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white mb-2">Dokumentace</h1>
-        <p className="text-slate-400">Přehled architektury a konfigurace projektů</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-white">Dokumentace</h1>
+            <Badge variant="zinc">{projects.length}</Badge>
+          </div>
+        </div>
       </div>
 
       {error && (
-        <div className="text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-lg p-4">
+        <div className="text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-xl p-4">
           {error}
         </div>
       )}
@@ -131,7 +146,7 @@ export default function DocsPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2].map((i) => (
-            <div key={i} className="h-32 rounded-2xl bg-slate-900/50 border border-slate-800 p-6 animate-pulse" />
+            <ProjectCardSkeleton key={i} />
           ))}
         </div>
       ) : (
@@ -141,30 +156,39 @@ export default function DocsPage() {
             return (
               <button
                 key={doc.id}
+                type="button"
                 onClick={() => handleOpenDoc(doc.id)}
                 disabled={isDetailLoading}
-                className="text-left w-full rounded-2xl bg-slate-900/50 border border-slate-800 p-6 backdrop-blur-sm hover:border-cyan-500/50 hover:bg-slate-900/80 transition-all group"
+                className="text-left w-full rounded-2xl bg-[#121215] border border-zinc-800/80 p-6 hover:border-zinc-700 hover:bg-[#16161c] transition-all duration-200 group cursor-pointer flex flex-col justify-between shadow-sm"
               >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20 shrink-0 group-hover:scale-105 transition-transform">
                     <IconComponent className="w-6 h-6 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-white font-semibold text-lg mb-1">{doc.name}</h3>
-                    <p className="text-slate-400 text-sm line-clamp-2">{doc.description}</p>
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      {doc.tech_stack.slice(0, 3).map((tech) => (
-                        <span key={tech} className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 text-xs">
-                          {tech}
-                        </span>
-                      ))}
-                      {doc.tech_stack.length > 3 && (
-                        <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-500 text-xs">
-                          +{doc.tech_stack.length - 3}
-                        </span>
-                      )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">
+                        {doc.name}
+                      </h3>
+                      <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all shrink-0" />
                     </div>
+                    <p className="text-xs text-zinc-400 line-clamp-2 mt-1 leading-relaxed">
+                      {doc.description}
+                    </p>
                   </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 pt-3 border-t border-zinc-800/60">
+                  {doc.tech_stack.slice(0, 4).map((tech) => (
+                    <Badge key={tech} variant="zinc" size="sm">
+                      {tech}
+                    </Badge>
+                  ))}
+                  {doc.tech_stack.length > 4 && (
+                    <Badge variant="zinc" size="sm">
+                      +{doc.tech_stack.length - 4}
+                    </Badge>
+                  )}
                 </div>
               </button>
             )

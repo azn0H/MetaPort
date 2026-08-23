@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Lock, User, ArrowRight } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
+import { Lock, User, ArrowRight, ArrowLeft } from 'lucide-react'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { Card } from '../components/ui/Card'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
 
 const API_URL = 'https://api-metaport.aznoh.cz'
 
@@ -19,7 +22,7 @@ function LoginPage() {
     setIsLoading(true)
 
     if (!email || !password) {
-      setError('Please enter both email and password')
+      setError('Zadejte prosím e-mail i heslo')
       setIsLoading(false)
       return
     }
@@ -34,7 +37,7 @@ function LoginPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Invalid credentials')
+        throw new Error('Neplatné přihlašovací údaje')
       }
 
       const data = await response.json()
@@ -49,77 +52,73 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        <div className="relative overflow-hidden rounded-2xl bg-slate-900/50 border border-slate-800 p-8 backdrop-blur-sm">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500" />
+    <div className="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col justify-between p-6 selection:bg-cyan-500/20 selection:text-cyan-300">
+      <header className="max-w-md w-full mx-auto">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Zpět na rozcestník</span>
+        </Link>
+      </header>
 
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-500/20">
-              <Lock className="w-8 h-8 text-white" />
+      <div className="w-full max-w-md mx-auto my-auto py-6">
+        <Card variant="bento" className="p-8 shadow-xl">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-zinc-800/80">
+            <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-200">
+              <Lock className="w-5 h-5" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">MetaPort administrace</h1>
-            <p className="text-slate-400 text-sm">By aznoH.cz</p>
+            <div>
+              <h1 className="text-xl font-bold text-white">Přihlášení</h1>
+              <p className="text-xs text-zinc-400">MetaPort Administrace</p>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-800/50 border border-slate-700 rounded-xl py-3 pl-11 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
-                  placeholder="Zadejte email"
-                />
-              </div>
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="E-mail nebo uživatel"
+              type="text"
+              required
+              leftIcon={<User className="w-4 h-4" />}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@aznoh.cz"
+            />
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
-                Heslo
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-800/50 border border-slate-700 rounded-xl py-3 pl-11 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
-                  placeholder="Zadejte heslo"
-                />
-              </div>
-            </div>
+            <Input
+              label="Heslo"
+              type="password"
+              required
+              leftIcon={<Lock className="w-4 h-4" />}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
 
             {error && (
-              <div className="text-rose-400 text-sm text-center bg-rose-500/10 border border-rose-500/20 rounded-lg py-2">
+              <div className="text-rose-400 text-xs text-center bg-rose-500/10 border border-rose-500/20 rounded-xl p-3">
                 {error}
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 hover:from-cyan-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="magic"
+              size="lg"
+              className="w-full mt-2"
+              isLoading={isLoading}
+              rightIcon={<ArrowRight className="w-4 h-4" />}
             >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  Přihlásit se
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </button>
+              Přihlásit se
+            </Button>
           </form>
-        </div>
+        </Card>
       </div>
+
+      <footer className="text-center text-xs text-zinc-600">
+        MetaPort • aznoH.cz
+      </footer>
     </div>
   )
 }

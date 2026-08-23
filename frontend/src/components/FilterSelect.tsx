@@ -11,17 +11,17 @@ interface FilterSelectProps {
 }
 
 const labelMap: Record<string, string> = {
-  'admin': 'Admin',
-  'betteradmin': 'Better Admin',
-  'superadmin': 'Super Admin'
+  admin: 'Admin',
+  betteradmin: 'Better Admin',
+  superadmin: 'Super Admin',
 }
 
-export function FilterSelect({ 
-  value, 
-  onChange, 
-  options, 
-  defaultLabel, 
-  icon: Icon 
+export function FilterSelect({
+  value,
+  onChange,
+  options,
+  defaultLabel,
+  icon: Icon,
 }: FilterSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -40,46 +40,47 @@ export function FilterSelect({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-medium rounded-xl py-2 px-3.5 transition-colors focus:outline-none focus:ring-1 focus:ring-slate-700"
+        className="flex items-center gap-2 bg-[#121215] hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold rounded-xl py-2 px-3.5 transition-all cursor-pointer shadow-sm"
       >
-        <Icon className="w-3.5 h-3.5 text-slate-400" />
+        <Icon className="w-3.5 h-3.5 text-zinc-400" />
         <span>{getLabel(value)}</span>
-        <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`w-3.5 h-3.5 text-zinc-500 transition-transform duration-200 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+        />
       </button>
 
       {isOpen && (
         <>
-          <div 
-            className="fixed inset-0 z-40" 
-            onClick={() => setIsOpen(false)} 
-          />
-          <div className="absolute right-0 z-50 mt-2 w-48 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden py-1">
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute right-0 z-50 mt-1.5 w-48 bg-[#121215] border border-zinc-800 rounded-xl shadow-2xl overflow-hidden py-1 backdrop-blur-xl">
             <button
               type="button"
               onClick={() => handleSelect('all')}
-              className={`w-full px-3.5 py-2 text-xs font-medium flex items-center justify-between transition-colors ${
-                value === 'all' 
-                  ? 'text-sky-400 bg-sky-500/10' 
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              className={`w-full px-3.5 py-2 text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                value === 'all'
+                  ? 'text-cyan-400 bg-cyan-500/10'
+                  : 'text-zinc-300 hover:bg-zinc-800 hover:text-white'
               }`}
             >
               <span>{defaultLabel}</span>
-              {value === 'all' && <Check className="w-3.5 h-3.5 text-sky-400" />}
+              {value === 'all' && <Check className="w-3.5 h-3.5 text-cyan-400" />}
             </button>
-            <div className="h-px bg-slate-800 my-1" />
+            <div className="h-px bg-zinc-800/80 my-1" />
             {options.map((option) => (
               <button
                 key={option}
                 type="button"
                 onClick={() => handleSelect(option)}
-                className={`w-full px-3.5 py-2 text-xs font-medium flex items-center justify-between transition-colors ${
-                  value === option 
-                    ? 'text-sky-400 bg-sky-500/10' 
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                className={`w-full px-3.5 py-2 text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                  value === option
+                    ? 'text-cyan-400 bg-cyan-500/10'
+                    : 'text-zinc-300 hover:bg-zinc-800 hover:text-white'
                 }`}
               >
                 <span>{labelMap[option] || option}</span>
-                {value === option && <Check className="w-3.5 h-3.5 text-sky-400" />}
+                {value === option && <Check className="w-3.5 h-3.5 text-cyan-400" />}
               </button>
             ))}
           </div>
@@ -88,4 +89,3 @@ export function FilterSelect({
     </div>
   )
 }
-

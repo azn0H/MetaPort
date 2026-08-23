@@ -36,9 +36,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3">
+      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2.5 pointer-events-none">
         {toasts.map((toast) => (
-          <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
+          <div key={toast.id} className="pointer-events-auto">
+            <ToastItem toast={toast} onRemove={removeToast} />
+          </div>
         ))}
       </div>
     </ToastContext.Provider>
@@ -56,20 +58,26 @@ function ToastItem({ toast, onRemove }: { toast: ToastMessage; onRemove: (id: nu
   const isSuccess = toast.type === 'success'
 
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 min-w-[300px] max-w-md rounded-xl border shadow-2xl transition-all duration-300
-      ${isSuccess ? 'bg-slate-900 border-emerald-500/20' : 'bg-slate-900 border-rose-500/20'}`}
+    <div
+      className={`flex items-center gap-3 px-4 py-3 min-w-[300px] max-w-md rounded-2xl border backdrop-blur-xl shadow-2xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-5 ${
+        isSuccess
+          ? 'bg-[#121215]/95 border-emerald-500/30 shadow-emerald-950/20'
+          : 'bg-[#121215]/95 border-rose-500/30 shadow-rose-950/20'
+      }`}
     >
-      <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center
-        ${isSuccess ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}
+      <div
+        className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center ${
+          isSuccess ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
+        }`}
       >
-        {isSuccess ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+        {isSuccess ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
       </div>
-      <p className="flex-1 text-sm font-medium text-slate-200">{toast.message}</p>
+      <p className="flex-1 text-xs font-medium text-zinc-200">{toast.message}</p>
       <button
         onClick={() => onRemove(toast.id)}
-        className="flex-shrink-0 text-slate-500 hover:text-slate-300 transition-colors"
+        className="shrink-0 text-zinc-500 hover:text-zinc-300 transition-colors p-1 rounded-lg hover:bg-zinc-800"
       >
-        <X className="w-4 h-4" />
+        <X className="w-3.5 h-3.5" />
       </button>
     </div>
   )

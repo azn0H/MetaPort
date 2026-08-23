@@ -1,72 +1,63 @@
 import { useState, type FormEvent } from 'react'
-import { UserPlus, Shield, Mail, User as UserIcon, Type, Loader2, ChevronDown, Check } from 'lucide-react'
+import { Mail, User as UserIcon, Type } from 'lucide-react'
 import { useToast } from './ToastProvider'
+import { Button } from './ui/Button'
+import { Input } from './ui/Input'
+import { Badge } from './ui/Badge'
 
 interface UserInviteFormProps {
   onSuccess: () => void
+  onCancel?: () => void
 }
 
-const roleMap: Record<string, string> = {
-  'admin': 'Admin',
-  'betteradmin': 'Better Admin',
-  'superadmin': 'Super Admin'
-}
+const roleOptions: { key: string; label: string; variant: 'cyan' | 'emerald' | 'amber' }[] = [
+  { key: 'admin', label: 'Admin', variant: 'cyan' },
+  { key: 'betteradmin', label: 'Better Admin', variant: 'emerald' },
+  { key: 'superadmin', label: 'Super Admin', variant: 'amber' },
+]
 
-function FormRoleDropdown({ value, onChange }: { value: string, onChange: (v: string) => void }) {
-  const [isOpen, setIsOpen] = useState(false)
-
-  const handleSelect = (val: string) => {
-    onChange(val)
-    setIsOpen(false)
-  }
-
+function RoleSelector({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (v: string) => void
+}) {
   return (
-    <div className="relative w-full">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full bg-slate-950/50 border border-slate-800 rounded-lg py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-slate-600 transition-all"
-      >
-        <span>{roleMap[value] || value}</span>
-        <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden py-1">
-            {Object.entries(roleMap).map(([key, label]) => {
-              const isSelected = value === key
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => handleSelect(key)}
-                  className={`w-full px-3 py-2.5 text-sm cursor-pointer transition-colors flex items-center justify-between ${
-                    isSelected
-                      ? 'text-sky-400 bg-slate-700/50'
-                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                  }`}
-                >
-                  <span>{label}</span>
-                  {isSelected && <Check className="w-4 h-4 text-sky-400" />}
-                </button>
-              )
-            })}
-          </div>
-        </>
-      )}
+    <div className="w-full">
+      <label className="block text-xs font-semibold text-zinc-300 mb-1.5">Role</label>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {roleOptions.map((role) => {
+          const isSelected = value === role.key
+          return (
+            <button
+              key={role.key}
+              type="button"
+              onClick={() => onChange(role.key)}
+              className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                isSelected
+                  ? 'bg-zinc-800 border-cyan-500/50 text-white shadow-sm ring-1 ring-cyan-500/30'
+                  : 'bg-[#121215] border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+              }`}
+            >
+              <Badge variant={role.variant} size="sm">
+                {role.label}
+              </Badge>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
 
-export default function UserInviteForm({ onSuccess }: UserInviteFormProps) {
+export default function UserInviteForm({ onSuccess, onCancel }: UserInviteFormProps) {
   const [formData, setFormData] = useState({
     username: '',
     first_name: '',
     last_name: '',
     email: '',
-    role: 'admin'
+    role: 'admin',
   })
   const [isLoading, setIsLoading] = useState(false)
   const { showToast } = useToast()
@@ -81,16 +72,19 @@ export default function UserInviteForm({ onSuccess }: UserInviteFormProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       })
 
       const data = await response.json()
 
       if (!response.ok) throw new Error(data.detail || 'Nepodařilo se pozvat uživatele')
 
-      showToast(`Pozvánka pro ${formData.username} byla odeslána na ${formData.email}.`, 'success')
+      showToast(
+        `Pozvánka pro ${formData.username} byla odeslána na ${formData.email}.`,
+        'success'
+      )
       setFormData({ username: '', first_name: '', last_name: '', email: '', role: 'admin' })
       onSuccess()
     } catch (err: any) {
@@ -101,107 +95,67 @@ export default function UserInviteForm({ onSuccess }: UserInviteFormProps) {
   }
 
   return (
-    <div className="rounded-xl bg-slate-900/50 border border-slate-800 overflow-hidden flex flex-col lg:flex-row">
-      
-      {/* Side Info */}
-      <div className="lg:w-1/3 p-6 md:p-8 border-b lg:border-b-0 lg:border-r border-slate-800">
-        <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center mb-6">
-          <UserPlus className="w-6 h-6 text-sky-400" />
-        </div>
-        <h2 className="text-xl font-semibold text-white mb-3">Nová pozvánka</h2>
-        <p className="text-sm text-slate-400 leading-relaxed">
-          Odešlete uživateli e-mail s unikátním ověřovacím odkazem. Přes něj si bezpečně nastaví vlastní přístupové heslo a získá přístup do administrace.
-        </p>
+    <form onSubmit={handleSubmit} className="p-6 space-y-4 bg-[#0d0d10]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input
+          label="Uživatelské jméno"
+          required
+          leftIcon={<UserIcon className="w-4 h-4" />}
+          value={formData.username}
+          onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+          placeholder="jan.novak"
+        />
+
+        <Input
+          label="E-mail"
+          type="email"
+          required
+          leftIcon={<Mail className="w-4 h-4" />}
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          placeholder="jan@aznoh.cz"
+        />
       </div>
 
-      {/* Main Form */}
-      <div className="lg:w-2/3 p-6 md:p-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Uživatelské jméno</label>
-              <div className="relative">
-                <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  type="text"
-                  required
-                  value={formData.username}
-                  onChange={(e) => setFormData({...formData, username: e.target.value})}
-                  className="w-full bg-slate-950/50 border border-slate-800 rounded-lg py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-slate-600 transition-all"
-                />
-              </div>
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input
+          label="Jméno"
+          leftIcon={<Type className="w-4 h-4" />}
+          value={formData.first_name}
+          onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+          placeholder="Jan"
+        />
 
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="w-full bg-slate-950/50 border border-slate-800 rounded-lg py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-slate-600 transition-all"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Jméno</label>
-              <div className="relative">
-                <Type className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  type="text"
-                  required
-                  value={formData.first_name}
-                  onChange={(e) => setFormData({...formData, first_name: e.target.value})}
-                  className="w-full bg-slate-950/50 border border-slate-800 rounded-lg py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-slate-600 transition-all"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Příjmení</label>
-              <div className="relative">
-                <Type className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  type="text"
-                  required
-                  value={formData.last_name}
-                  onChange={(e) => setFormData({...formData, last_name: e.target.value})}
-                  className="w-full bg-slate-950/50 border border-slate-800 rounded-lg py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-slate-600 transition-all"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Přístupová role</label>
-            <div className="relative">
-              <Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none z-10" />
-              <FormRoleDropdown 
-                value={formData.role} 
-                onChange={(val) => setFormData({...formData, role: val})} 
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-4">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="bg-sky-600 text-white font-medium py-2.5 px-6 rounded-lg hover:bg-sky-500 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-              <span>Odeslat pozvánku</span>
-            </button>
-          </div>
-        </form>
+        <Input
+          label="Příjmení"
+          leftIcon={<Type className="w-4 h-4" />}
+          value={formData.last_name}
+          onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+          placeholder="Novák"
+        />
       </div>
 
-    </div>
+      <RoleSelector
+        value={formData.role}
+        onChange={(val) => setFormData({ ...formData, role: val })}
+      />
+
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-800">
+        {onCancel && (
+          <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+            Zrušit
+          </Button>
+        )}
+        <Button
+          type="submit"
+          variant="magic"
+          size="sm"
+          isLoading={isLoading}
+          leftIcon={<Mail className="w-4 h-4" />}
+        >
+          Odeslat pozvánku
+        </Button>
+      </div>
+    </form>
   )
 }
-

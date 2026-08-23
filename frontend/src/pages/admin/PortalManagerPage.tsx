@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react'
-import { LayoutGrid, Settings, Plus, Boxes, Loader2 } from 'lucide-react'
+import { LayoutGrid, Settings, Plus, Boxes } from 'lucide-react'
 import { useToast } from '../../components/ToastProvider'
 import { usePageTitle } from '../../hooks/usePageTitle'
 import type { PortalSettings, PortalLink } from '../../components/portal/portalTypes'
 import { PortalSettingsForm } from '../../components/portal/PortalSettingsForm'
 import { PortalLinkCard } from '../../components/portal/PortalLinkCard'
 import { PortalLinkModal } from '../../components/portal/PortalLinkModal'
+import { Tabs } from '../../components/ui/Tabs'
+import { Button } from '../../components/ui/Button'
+import { Badge } from '../../components/ui/Badge'
+import { Card } from '../../components/ui/Card'
+import { PortalLinkSkeleton, Skeleton } from '../../components/ui/Skeleton'
 
 const API_BASE = 'https://api-metaport.aznoh.cz'
 
@@ -29,8 +34,8 @@ export default function PortalManagerPage() {
       const token = localStorage.getItem('jwt_token')
       const res = await fetch(`${API_BASE}/api/v1/portal/admin`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
       if (!res.ok) throw new Error('Nepodařilo se načíst data')
       const data = await res.json()
@@ -38,7 +43,10 @@ export default function PortalManagerPage() {
       setLinks(data.links)
       try {
         localStorage.setItem('metaport_portal_settings', JSON.stringify(data.settings))
-        localStorage.setItem('metaport_portal_links', JSON.stringify(data.links.filter((l: PortalLink) => l.is_active)))
+        localStorage.setItem(
+          'metaport_portal_links',
+          JSON.stringify(data.links.filter((l: PortalLink) => l.is_active))
+        )
       } catch (e) {}
     } catch (err: any) {
       showToast(err.message || 'Chyba při načítání dat', 'error')
@@ -77,9 +85,9 @@ export default function PortalManagerPage() {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(formData)
+          body: JSON.stringify(formData),
         })
         if (!res.ok) throw new Error('Nepodařilo se upravit box')
         showToast('Box byl úspěšně upraven', 'success')
@@ -88,9 +96,9 @@ export default function PortalManagerPage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ ...formData, order: links.length + 1 })
+          body: JSON.stringify({ ...formData, order: links.length + 1 }),
         })
         if (!res.ok) throw new Error('Nepodařilo se vytvořit box')
         showToast('Nový box byl úspěšně přidán', 'success')
@@ -110,8 +118,8 @@ export default function PortalManagerPage() {
       const res = await fetch(`${API_BASE}/api/v1/portal/links/${id}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
       if (!res.ok) throw new Error('Nepodařilo se smazat box')
       showToast('Box byl smazán', 'success')
@@ -129,9 +137,9 @@ export default function PortalManagerPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ is_active: updatedActive })
+        body: JSON.stringify({ is_active: updatedActive }),
       })
       if (!res.ok) throw new Error('Nepodařilo se změnit stav')
       setLinks(links.map((l) => (l.id === link.id ? { ...l, is_active: updatedActive } : l)))
@@ -153,7 +161,10 @@ export default function PortalManagerPage() {
     const updatedWithOrder = newLinks.map((item, idx) => ({ ...item, order: idx + 1 }))
     setLinks(updatedWithOrder)
     try {
-      localStorage.setItem('metaport_portal_links', JSON.stringify(updatedWithOrder.filter((l) => l.is_active)))
+      localStorage.setItem(
+        'metaport_portal_links',
+        JSON.stringify(updatedWithOrder.filter((l) => l.is_active))
+      )
     } catch (e) {}
 
     try {
@@ -162,66 +173,61 @@ export default function PortalManagerPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(updatedWithOrder.map((l) => ({ id: l.id, order: l.order })))
+        body: JSON.stringify(updatedWithOrder.map((l) => ({ id: l.id, order: l.order }))),
       })
     } catch (e) {}
   }
 
   if (isLoading || !settings) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-slate-400">
-        <Loader2 className="w-8 h-8 animate-spin text-sky-500" />
-        <p className="text-sm">Načítání rozcestníku...</p>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="w-36 h-8 rounded-xl" />
+          <div className="flex gap-2">
+            <Skeleton className="w-24 h-8 rounded-xl" />
+            <Skeleton className="w-28 h-8 rounded-xl" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <PortalLinkSkeleton key={i} />
+          ))}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-1">Rozcestník</h1>
-          <p className="text-slate-400 text-sm">
-            Správa odkazů a globálního nastavení úvodní stránky
-          </p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-white">Rozcestník</h1>
+            <Badge variant="zinc">{links.length}</Badge>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl">
-            <button
-              onClick={() => setActiveTab('links')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'links'
-                  ? 'bg-slate-800 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-              <span>Odkazy ({links.length})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'settings'
-                  ? 'bg-slate-800 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Settings className="w-4 h-4" />
-              <span>Nastavení & verze</span>
-            </button>
-          </div>
+          <Tabs
+            tabs={[
+              { id: 'links', label: 'Odkazy', icon: LayoutGrid, badge: links.length },
+              { id: 'settings', label: 'Nastavení', icon: Settings },
+            ]}
+            activeTab={activeTab}
+            onChange={(t) => setActiveTab(t as TabType)}
+          />
 
           {activeTab === 'links' && (
-            <button
+            <Button
+              variant="magic"
+              size="sm"
+              leftIcon={<Plus className="w-4 h-4" />}
               onClick={handleOpenAdd}
-              className="bg-sky-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-sky-500 transition-all flex items-center gap-2 text-sm"
             >
-              <Plus className="w-4 h-4" />
-              <span>Přidat box</span>
-            </button>
+              Přidat box
+            </Button>
           )}
         </div>
       </div>
@@ -244,20 +250,19 @@ export default function PortalManagerPage() {
           </div>
 
           {links.length === 0 && (
-            <div className="text-center py-16 bg-slate-900/30 rounded-xl border border-slate-800">
-              <Boxes className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-400 font-medium">Zatím zde nejsou žádné odkazy</p>
-              <p className="text-slate-500 text-xs mt-1">Klikněte na "Přidat box" pro vytvoření nového odkazu.</p>
-            </div>
+            <Card variant="bento" className="p-12 text-center">
+              <Boxes className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+              <h3 className="text-base font-semibold text-zinc-300">Zatím zde nejsou žádné odkazy</h3>
+              <p className="text-xs text-zinc-500 mt-1">
+                Klikněte na "Přidat box" pro vytvoření nové aplikační dlaždice.
+              </p>
+            </Card>
           )}
         </div>
       )}
 
       {activeTab === 'settings' && (
-        <PortalSettingsForm
-          initialSettings={settings}
-          apiBase={API_BASE}
-        />
+        <PortalSettingsForm initialSettings={settings} apiBase={API_BASE} />
       )}
 
       <PortalLinkModal
