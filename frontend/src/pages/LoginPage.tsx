@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Lock, User, ArrowRight, ArrowLeft } from 'lucide-react'
 import { usePageTitle } from '../hooks/usePageTitle'
@@ -15,6 +15,33 @@ function LoginPage() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const hash = window.location.hash
+    const search = window.location.search
+    const params = new URLSearchParams(hash ? hash.substring(1) : search)
+    const accessToken = params.get('access_token') || params.get('id_token')
+
+    if (accessToken) {
+      let role = 'superadmin'
+      try {
+        const payload = JSON.parse(atob(accessToken.split('.')[1]))
+        if (payload.roles && Array.isArray(payload.roles)) {
+          if (payload.roles.some((r: string) => r.toLowerCase() === 'platform-admin' || r.toLowerCase() === 'authentik admins')) {
+            role = 'superadmin'
+          } else {
+            role = 'admin'
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing token:', e)
+      }
+
+      localStorage.setItem('jwt_token', accessToken)
+      localStorage.setItem('user_role', role)
+      navigate('/admin', { replace: true })
+    }
+  }, [navigate])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -50,6 +77,8 @@ function LoginPage() {
       setIsLoading(false)
     }
   }
+
+  const ssoUrl = "https://auth.aznoh.cz/application/o/authorize/?client_id=kcTkisBmdXcInUHLF3nYFfjyn9o5frSt4tJRMnsW&response_type=id_token+token&scope=openid+profile+email+roles&redirect_uri=https%3A%2F%2Fmetaport.aznoh.cz%2Flogin";
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 flex flex-col justify-between p-6 selection:bg-cyan-500/20 selection:text-cyan-600 dark:selection:text-cyan-300">
@@ -113,7 +142,7 @@ function LoginPage() {
             >
               Přihlásit se
             </Button>
-          
+
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
@@ -124,8 +153,8 @@ function LoginPage() {
             </div>
 
             <a
-              href="https://auth.aznoh.cz/application/o/authorize/?client_id=kcTkisBmdXcInUHLF3nYFfjyn9o5frSt4tJRMnsW&response_type=code&scope=openid+profile+email+roles&redirect_uri=https%3A%2F%2Fmetaport.aznoh.cz%2F"
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2.5 transition-colors text-sm shadow-md"
+              href={ssoUrl}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2.5 transition-colors text-sm shadow-md text-center"
             >
               Přihlásit se přes Vortex SSO
             </a>
