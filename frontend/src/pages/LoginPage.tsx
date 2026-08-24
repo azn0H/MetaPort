@@ -124,7 +124,7 @@ function LoginPage() {
             </div>
 
             <a
-              href="https://sso.aznoh.cz"
+              href="https://auth.aznoh.cz/application/o/authorize/?client_id=kcTkisBmdXcInUHLF3nYFfjyn9o5frSt4tJRMnsW&response_type=code&scope=openid+profile+email+roles&redirect_uri=https%3A%2F%2Fmetaport.aznoh.cz%2F"
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2.5 transition-colors text-sm shadow-md"
             >
               Přihlásit se přes Vortex SSO
