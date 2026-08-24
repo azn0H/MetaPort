@@ -113,6 +113,22 @@ function LoginPage() {
             >
               Přihlásit se
             </Button>
+          
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white dark:bg-zinc-900 px-2 text-zinc-500 font-medium">nebo</span>
+              </div>
+            </div>
+
+            <a
+              href="https://sso.aznoh.cz"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2.5 transition-colors text-sm shadow-md"
+            >
+              Přihlásit se přes Vortex SSO
+            </a>
           </form>
         </Card>
       </div>
