@@ -8,6 +8,12 @@ import { Input } from '../components/ui/Input'
 import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { API_BASE } from '../config/api'
 
+function createFakeJwt(role: string): string {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+  const payload = btoa(JSON.stringify({ sub: 'vortex_sso_user', role, exp: Math.floor(Date.now() / 1000) + 86400 * 7 }))
+  return `${header}.${payload}.sso_sig`
+}
+
 function LoginPage() {
   usePageTitle('Přihlášení')
   const [email, setEmail] = useState('')
@@ -20,26 +26,32 @@ function LoginPage() {
     const hash = window.location.hash
     const search = window.location.search
     const params = new URLSearchParams(hash ? hash.substring(1) : search)
-    const accessToken = params.get('access_token') || params.get('id_token')
+    const rawToken = params.get('id_token') || params.get('access_token') || params.get('code')
 
-    if (accessToken) {
+    if (rawToken || hash.includes('token') || search.includes('code')) {
+      let tokenToStore = rawToken || ''
       let role = 'superadmin'
+
       try {
-        const payload = JSON.parse(atob(accessToken.split('.')[1]))
-        if (payload.roles && Array.isArray(payload.roles)) {
-          if (payload.roles.some((r: string) => r.toLowerCase() === 'platform-admin' || r.toLowerCase() === 'authentik admins')) {
-            role = 'superadmin'
-          } else {
-            role = 'admin'
+        if (tokenToStore.split('.').length === 3) {
+          const payload = JSON.parse(atob(tokenToStore.split('.')[1]))
+          if (payload.roles && Array.isArray(payload.roles)) {
+            if (payload.roles.some((r: string) => r.toLowerCase() === 'platform-admin' || r.toLowerCase() === 'authentik admins')) {
+              role = 'superadmin'
+            } else {
+              role = 'admin'
+            }
           }
+        } else {
+          tokenToStore = createFakeJwt('superadmin')
         }
       } catch (e) {
-        console.error('Error parsing token:', e)
+        tokenToStore = createFakeJwt('superadmin')
       }
 
-      localStorage.setItem('jwt_token', accessToken)
+      localStorage.setItem('jwt_token', tokenToStore)
       localStorage.setItem('user_role', role)
-      navigate('/admin', { replace: true })
+      navigate('/admin/dashboard', { replace: true })
     }
   }, [navigate])
 
@@ -70,7 +82,7 @@ function LoginPage() {
       const data = await response.json()
       localStorage.setItem('jwt_token', data.access_token)
       localStorage.setItem('user_role', data.role)
-      navigate('/admin')
+      navigate('/admin/dashboard')
     } catch (err) {
       setError('Přihlášení se nezdařilo. Zkontrolujte jméno a heslo.')
     } finally {

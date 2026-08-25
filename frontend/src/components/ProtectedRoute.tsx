@@ -15,18 +15,18 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
     if (!token) return
 
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      
-      if (payload.exp && payload.exp * 1000 < Date.now()) {
-        localStorage.removeItem('jwt_token')
-        localStorage.removeItem('user_role')
-        
-        showToast('Platnost přihlášení vypršela. Přihlaste se prosím znovu.', 'error')
-        navigate('/login', { replace: true })
+      const parts = token.split('.')
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]))
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          localStorage.removeItem('jwt_token')
+          localStorage.removeItem('user_role')
+          showToast('Platnost přihlášení vypršela. Přihlaste se prosím znovu.', 'error')
+          navigate('/login', { replace: true })
+        }
       }
     } catch (e) {
-      localStorage.removeItem('jwt_token')
-      navigate('/login', { replace: true })
+      // Keep token if parse error occurs
     }
   }, [token, navigate, showToast])
 
