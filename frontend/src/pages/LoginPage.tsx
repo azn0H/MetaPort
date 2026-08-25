@@ -26,10 +26,17 @@ function LoginPage() {
     const hash = window.location.hash
     const search = window.location.search
     const params = new URLSearchParams(hash ? hash.substring(1) : search)
+
+    const errorParam = params.get('error') || params.get('error_description')
+    if (errorParam) {
+      setError(decodeURIComponent(params.get('error_description') || errorParam))
+      return
+    }
+
     const rawToken = params.get('id_token') || params.get('access_token') || params.get('code')
 
-    if (rawToken || hash.includes('token') || search.includes('code')) {
-      let tokenToStore = rawToken || ''
+    if (rawToken) {
+      let tokenToStore = rawToken
       let role = 'superadmin'
 
       try {
@@ -90,7 +97,8 @@ function LoginPage() {
     }
   }
 
-  const ssoUrl = "https://auth.aznoh.cz/application/o/authorize/?client_id=kcTkisBmdXcInUHLF3nYFfjyn9o5frSt4tJRMnsW&response_type=id_token+token&scope=openid+profile+email+roles&redirect_uri=https%3A%2F%2Fmetaport.aznoh.cz%2Flogin";
+  const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36)
+  const ssoUrl = `https://auth.aznoh.cz/application/o/authorize/?client_id=kcTkisBmdXcInUHLF3nYFfjyn9o5frSt4tJRMnsW&response_type=id_token%20token&scope=openid%20profile%20email%20roles&redirect_uri=https%3A%2F%2Fmetaport.aznoh.cz%2Flogin&nonce=${nonce}`
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 flex flex-col justify-between p-6 selection:bg-cyan-500/20 selection:text-cyan-600 dark:selection:text-cyan-300">
