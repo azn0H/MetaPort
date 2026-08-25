@@ -8,12 +8,6 @@ import { Input } from '../components/ui/Input'
 import { ThemeToggle } from '../components/ui/ThemeToggle'
 import { API_BASE } from '../config/api'
 
-function createFakeJwt(role: string): string {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-  const payload = btoa(JSON.stringify({ sub: 'vortex_sso_user', role, exp: Math.floor(Date.now() / 1000) + 86400 * 7 }))
-  return `${header}.${payload}.sso_sig`
-}
-
 function LoginPage() {
   usePageTitle('Přihlášení')
   const [email, setEmail] = useState('')
