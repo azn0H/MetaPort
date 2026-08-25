@@ -256,6 +256,60 @@ async def set_password(data: SetPasswordRequest, db: Session = Depends(get_db)):
     db.commit()
     return {"msg": "Heslo bylo uspesne nastaveno. Nyni se muzete prihlasit."}
 
+class SSORequest(BaseModel):
+    token: str
+
+@router.post("/sso", response_model=Token)
+async def sso_login(data: SSORequest, db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(data.token, options={"verify_signature": False})
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Neplatný SSO token: {str(e)}"
+        )
+
+    email = payload.get("email") or payload.get("preferred_username") or payload.get("sub")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="SSO token neobsahuje e-mail ani uživatelské jméno."
+        )
+
+    roles = payload.get("roles") or payload.get("groups") or []
+    if isinstance(roles, list) and any(str(r).lower() in ["platform-admin", "authentik admins", "superadmin"] for r in roles):
+        role = "superadmin"
+    else:
+        role = "admin"
+
+    user = db.query(User).filter((User.email == email) | (User.username == email)).first()
+    if not user:
+        username = payload.get("preferred_username") or email.split("@")[0]
+        existing = db.query(User).filter(User.username == username).first()
+        if existing:
+            username = f"{username}_{secrets.token_hex(2)}"
+
+        first_name = payload.get("given_name") or payload.get("name") or "SSO"
+        last_name = payload.get("family_name") or "User"
+
+        user = User(
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            email=email if "@" in email else f"{email}@aznoh.cz",
+            hashed_password=get_password_hash(secrets.token_urlsafe(32)),
+            role=role
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.email, "role": user.role}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer", "role": user.role}
+
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
     request: Request,

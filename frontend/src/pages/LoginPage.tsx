@@ -25,40 +25,48 @@ function LoginPage() {
   useEffect(() => {
     const hash = window.location.hash
     const search = window.location.search
+    if (!hash && !search) return
+
     const params = new URLSearchParams(hash ? hash.substring(1) : search)
 
     const errorParam = params.get('error') || params.get('error_description')
     if (errorParam) {
       setError(decodeURIComponent(params.get('error_description') || errorParam))
+      window.history.replaceState({}, document.title, window.location.pathname)
       return
     }
 
     const rawToken = params.get('id_token') || params.get('access_token') || params.get('code')
 
     if (rawToken) {
-      let tokenToStore = rawToken
-      let role = 'superadmin'
+      window.history.replaceState({}, document.title, window.location.pathname)
+      setIsLoading(true)
 
-      try {
-        if (tokenToStore.split('.').length === 3) {
-          const payload = JSON.parse(atob(tokenToStore.split('.')[1]))
-          if (payload.roles && Array.isArray(payload.roles)) {
-            if (payload.roles.some((r: string) => r.toLowerCase() === 'platform-admin' || r.toLowerCase() === 'authentik admins')) {
-              role = 'superadmin'
-            } else {
-              role = 'admin'
-            }
+      fetch(`${API_BASE}/api/v1/auth/sso`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: rawToken }),
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}))
+            throw new Error(errData.detail || 'Přihlášení přes Vortex SSO se nezdařilo')
           }
-        } else {
-          tokenToStore = createFakeJwt('superadmin')
-        }
-      } catch (e) {
-        tokenToStore = createFakeJwt('superadmin')
-      }
-
-      localStorage.setItem('jwt_token', tokenToStore)
-      localStorage.setItem('user_role', role)
-      navigate('/admin/dashboard', { replace: true })
+          return res.json()
+        })
+        .then((data) => {
+          localStorage.setItem('jwt_token', data.access_token)
+          localStorage.setItem('user_role', data.role)
+          navigate('/admin/dashboard', { replace: true })
+        })
+        .catch((err) => {
+          setError(err.message || 'Chyba při ověřování SSO přihlášení')
+        })
+        .finally(() => {
+          setIsLoading(false)
+        })
     }
   }, [navigate])
 
