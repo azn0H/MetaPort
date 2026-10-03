@@ -271,6 +271,22 @@ async def sso_login(data: SSORequest, db: Session = Depends(get_db)):
         payload = jwt.decode(data.token, signing_key.key, algorithms=["RS256"], issuer=issuer, audience=audience, options={"require": ["exp", "iss", "aud", "sub"]})
     except HTTPException:
         raise
+    except jwt.exceptions.PyJWKClientConnectionError:
+        raise HTTPException(status_code=503, detail="SSO: backend se nemůže spojit s poskytovatelem podpisových klíčů. Zkuste přihlášení znovu.")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="SSO token vypršel. Spusťte nové přihlášení přes Vortex SSO.")
+    except jwt.InvalidAudienceError:
+        raise HTTPException(status_code=400, detail="SSO token je určený jiné aplikaci. Je potřeba opravit nastavení client ID / audience.")
+    except jwt.InvalidIssuerError:
+        raise HTTPException(status_code=400, detail="SSO token vydal jiný poskytovatel, než očekává MetaPort. Je potřeba opravit nastavení issuer.")
+    except jwt.InvalidSignatureError:
+        raise HTTPException(status_code=400, detail="Podpis SSO tokenu neodpovídá nakonfigurovaným klíčům poskytovatele.")
+    except jwt.InvalidAlgorithmError:
+        raise HTTPException(status_code=400, detail="SSO token nepoužívá požadovaný podpis RS256. Ověřte podpisový klíč poskytovatele.")
+    except jwt.ImmatureSignatureError:
+        raise HTTPException(status_code=400, detail="SSO token ještě není platný. Ověřte čas na Raspberry Pi a poskytovateli SSO.")
+    except jwt.MissingRequiredClaimError:
+        raise HTTPException(status_code=400, detail="SSO token neobsahuje povinné údaje exp, iss, aud nebo sub.")
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

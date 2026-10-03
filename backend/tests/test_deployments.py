@@ -225,5 +225,21 @@ class DeploymentTests(unittest.TestCase):
             token = jwt.encode({'sub': 'attacker', 'roles': ['superadmin']}, key='', algorithm='none')
             self.assertEqual(self.api.post('/api/v1/auth/sso', json={'token': token}).status_code, 503)
 
+    def test_sso_reports_validation_reason_without_exposing_token(self):
+        import jwt
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from routers import auth
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        claims = {'sub': 'test-user', 'iss': 'https://issuer.test/', 'aud': 'client-id', 'exp': 4102444800}
+        cases = [({'aud': 'wrong-client'}, 'jiné aplikaci'), ({'iss': 'https://wrong.test/'}, 'jiný poskytovatel'), ({'exp': 1}, 'vypršel')]
+        with patch.dict(os.environ, {'SSO_ISSUER': claims['iss'], 'SSO_AUDIENCE': claims['aud'], 'SSO_JWKS_URL': 'https://issuer.test/jwks'}), patch.object(auth.jwt, 'PyJWKClient') as jwks:
+            jwks.return_value.get_signing_key_from_jwt.return_value.key = key.public_key()
+            for changed, expected in cases:
+                token = jwt.encode(claims | changed, key, algorithm='RS256')
+                result = self.api.post('/api/v1/auth/sso', json={'token': token})
+                self.assertEqual(result.status_code, 400)
+                self.assertIn(expected, result.json()['detail'])
+                self.assertNotIn(token, result.text)
+
 if __name__ == '__main__':
     unittest.main()

@@ -30,7 +30,12 @@ function LoginPage() {
       return
     }
 
-    const rawToken = params.get('id_token') || params.get('access_token') || params.get('code')
+    const rawToken = params.get('id_token')
+    if (!rawToken && (params.has('code') || params.has('access_token'))) {
+      window.history.replaceState({}, document.title, window.location.pathname)
+      setError('SSO nevrátilo ID token. Spusťte nové přihlášení přes Vortex SSO; autorizační kód ani access token zde nelze použít.')
+      return
+    }
 
     if (rawToken) {
       window.history.replaceState({}, document.title, window.location.pathname)
