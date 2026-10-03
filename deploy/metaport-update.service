@@ -1,0 +1,19 @@
+[Unit]
+Description=Update MetaPort outside its backend
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=aznoh
+EnvironmentFile=/etc/metaport-updater.conf
+ExecStart=/usr/bin/python3 /usr/local/lib/metaport-updater/self_update.py
+Nice=15
+IOSchedulingClass=idle
+CPUWeight=20
+IOWeight=20
+UMask=0077
+TimeoutStartSec=40min
+
+[Install]
+WantedBy=multi-user.target

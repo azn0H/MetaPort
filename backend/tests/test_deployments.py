@@ -143,6 +143,20 @@ class DeploymentTests(unittest.TestCase):
         command.assert_not_called()
         self.assertIn('již existuje Compose stack', d.read()['projects'][0]['logs'][0])
 
+    def test_external_updater_status_and_request(self):
+        folder = d.ROOT / 'self-update'
+        folder.mkdir()
+        (folder / 'status.json').write_text(json.dumps({'status': 'success', 'commit': 'abc', 'phase': 'HTTP 200'}))
+        d.update(self.project['id'], external_updater=True)
+        listed = self.api.get('/api/v1/deployments').json()['projects'][0]
+        self.assertEqual(listed['status'], 'success')
+        self.assertEqual(listed['logs'], ['HTTP 200'])
+        with patch.object(d.os, 'name', 'posix'):
+            self.assertEqual(d.queue(self.project['id']), {'ok': True})
+        self.assertTrue((folder / 'request').exists())
+        self.assertEqual(self.api.get('/api/v1/deployments').json()['projects'][0]['status'], 'queued')
+        self.assertEqual(self.api.put('/api/v1/deployments/projects/' + self.project['id'], json=self.data).status_code, 409)
+
     def test_adoption_uses_existing_namespace_and_refuses_changed_volumes(self):
         self.project['adopted_stack'] = {'name': 'example', 'binds': {}, 'volumes': ['example_db']}
         calls = []

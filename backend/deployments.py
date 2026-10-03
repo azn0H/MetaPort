@@ -69,7 +69,17 @@ class Project(BaseModel):
 @router.get('')
 def listing():
     with lock:
-        return public(read())
+        state = public(read())
+        for p in state['projects']:
+            if p.get('external_updater'):
+                status = ROOT / 'self-update' / 'status.json'
+                if status.exists():
+                    current = json.loads(status.read_text())
+                    p.update({k: current[k] for k in ('status', 'commit', 'started_at', 'finished_at') if k in current})
+                    p['logs'] = [current[k] for k in ('phase', 'error') if current.get(k)]
+                if (ROOT / 'self-update' / 'request').exists():
+                    p['status'] = 'queued'
+        return state
 
 @router.post('/connections')
 def connection(data: Connection):
@@ -130,6 +140,8 @@ def save_project(pid: str, data: Project):
         state = read()
         validate_project(data, state)
         old = next((p for p in state['projects'] if p['id'] == pid), None)
+        if old and old.get('external_updater'):
+            raise HTTPException(409, 'MetaPort spravuje externí služba. Její větev a automatické nasazování se nastavují na hostiteli.')
         if old and old.get('status') in ('queued', 'running'):
             raise HTTPException(409, 'Probíhá nasazení')
         if any(p['name'] == data.name and p['id'] != pid for p in state['projects']):
@@ -172,6 +184,9 @@ def queue(pid: str):
         p = next((p for p in state['projects'] if p['id'] == pid), None)
         if not p:
             raise HTTPException(404, 'Projekt nenalezen')
+        if p.get('external_updater'):
+            (ROOT / 'self-update' / 'request').touch(mode=0o600)
+            return {'ok': True}
         if p['status'] in ('queued', 'running'):
             raise HTTPException(409, 'Nasazení už probíhá')
         p['status'] = 'queued'
@@ -311,6 +326,8 @@ def worker():
         for p in state['projects']:
             if stop.is_set():
                 break
+            if p.get('external_updater'):
+                continue
             c = next((c for c in state['connections'] if c['id'] == p['connection_id']), None)
             if not c:
                 continue
