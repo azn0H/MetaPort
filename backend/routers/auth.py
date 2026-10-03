@@ -270,7 +270,7 @@ async def sso_login(data: SSORequest, db: Session = Depends(get_db)):
         jwks_url = os.getenv("SSO_JWKS_URL")
         if not issuer or not audience or not jwks_url or not jwks_url.startswith("https://"):
             raise HTTPException(status_code=503, detail="SSO vyžaduje konfiguraci issuer, audience a HTTPS JWKS.")
-        signing_key = jwt.PyJWKClient(jwks_url).get_signing_key_from_jwt(data.token)
+        signing_key = jwt.PyJWKClient(jwks_url, headers={"User-Agent": "MetaPort/1.0 (+https://metaport.aznoh.cz)"}, timeout=10).get_signing_key_from_jwt(data.token)
         payload = jwt.decode(data.token, signing_key.key, algorithms=["RS256"], issuer=issuer, audience=audience, options={"require": ["exp", "iss", "aud", "sub"]})
     except HTTPException:
         raise

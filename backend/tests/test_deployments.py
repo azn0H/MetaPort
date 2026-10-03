@@ -240,6 +240,7 @@ class DeploymentTests(unittest.TestCase):
                 self.assertEqual(result.status_code, 400)
                 self.assertIn(expected, result.json()['detail'])
                 self.assertNotIn(token, result.text)
+            self.assertIn('MetaPort/', jwks.call_args.kwargs['headers']['User-Agent'])
 
 if __name__ == '__main__':
     unittest.main()
