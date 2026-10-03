@@ -12,6 +12,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage'))
 const SetPasswordPage = lazy(() => import('./pages/admin/SetPasswordPage'))
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'))
 const ContainersPage = lazy(() => import('./pages/admin/ContainersPage'))
+const DeploymentsPage = lazy(() => import('./pages/admin/DeploymentsPage'))
 const ProjectsPage = lazy(() => import('./pages/admin/ProjectsPage'))
 const DocsPage = lazy(() => import('./pages/admin/DocsPage'))
 const PortalManagerPage = lazy(() => import('./pages/admin/PortalManagerPage'))
@@ -46,6 +47,7 @@ function App() {
             >
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="deployments" element={<RequireRole allowedRoles={['superadmin']}><DeploymentsPage /></RequireRole>} />
               <Route path="docs" element={<DocsPage />} />
               <Route
                 path="containers"

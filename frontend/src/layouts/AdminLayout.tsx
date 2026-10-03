@@ -50,6 +50,12 @@ const navSections: NavSection[] = [
         allowedRoles: ['admin', 'betteradmin', 'superadmin'],
       },
       {
+        path: '/admin/deployments',
+        label: 'Nasazování a disk',
+        icon: FolderGit2,
+        allowedRoles: ['superadmin'],
+      },
+      {
         path: '/admin/projects',
         label: 'Projekty',
         icon: FolderGit2,
@@ -99,6 +105,7 @@ const pathToTitle: Record<string, string> = {
   '/admin/dashboard': 'Dashboard',
   '/admin/containers': 'Kontejnery',
   '/admin/projects': 'Projekty',
+  '/admin/deployments': 'Nasazování a disk',
   '/admin/portal': 'Rozcestník',
   '/admin/files': 'Správce souborů',
   '/admin/docs': 'Dokumentace',

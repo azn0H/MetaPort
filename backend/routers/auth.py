@@ -262,11 +262,19 @@ class SSORequest(BaseModel):
 @router.post("/sso", response_model=Token)
 async def sso_login(data: SSORequest, db: Session = Depends(get_db)):
     try:
-        payload = jwt.decode(data.token, options={"verify_signature": False})
-    except Exception as e:
+        issuer = os.getenv("SSO_ISSUER")
+        audience = os.getenv("SSO_AUDIENCE")
+        jwks_url = os.getenv("SSO_JWKS_URL")
+        if not issuer or not audience or not jwks_url or not jwks_url.startswith("https://"):
+            raise HTTPException(status_code=503, detail="SSO vyžaduje konfiguraci issuer, audience a HTTPS JWKS.")
+        signing_key = jwt.PyJWKClient(jwks_url).get_signing_key_from_jwt(data.token)
+        payload = jwt.decode(data.token, signing_key.key, algorithms=["RS256"], issuer=issuer, audience=audience, options={"require": ["exp", "iss", "aud", "sub"]})
+    except HTTPException:
+        raise
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Neplatný SSO token: {str(e)}"
+            detail="Neplatný SSO token"
         )
 
     email = payload.get("email") or payload.get("preferred_username") or payload.get("sub")

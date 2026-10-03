@@ -145,3 +145,13 @@ app.include_router(docs.router)
 app.include_router(system.router)
 app.include_router(github.router)
 app.include_router(portal.router)
+import deployments
+app.include_router(deployments.router)
+
+@app.on_event('startup')
+def start_deployments():
+    deployments.start()
+
+@app.on_event('shutdown')
+def stop_deployments():
+    deployments.stop.set()
