@@ -14,59 +14,68 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [nonce] = useState(() => crypto.randomUUID())
   const navigate = useNavigate()
 
   useEffect(() => {
-    const hash = window.location.hash
-    const search = window.location.search
-    if (!hash && !search) return
+    const controller = new AbortController()
+    queueMicrotask(() => {
+      if (controller.signal.aborted) return
+      const hash = window.location.hash
+      const search = window.location.search
+      if (!hash && !search) return
 
-    const params = new URLSearchParams(hash ? hash.substring(1) : search)
+      const params = new URLSearchParams(hash ? hash.substring(1) : search)
 
-    const errorParam = params.get('error') || params.get('error_description')
-    if (errorParam) {
-      setError(decodeURIComponent(params.get('error_description') || errorParam))
-      window.history.replaceState({}, document.title, window.location.pathname)
-      return
-    }
+      const errorParam = params.get('error') || params.get('error_description')
+      if (errorParam) {
+        setError(decodeURIComponent(params.get('error_description') || errorParam))
+        window.history.replaceState({}, document.title, window.location.pathname)
+        return
+      }
 
-    const rawToken = params.get('id_token')
-    if (!rawToken && (params.has('code') || params.has('access_token'))) {
-      window.history.replaceState({}, document.title, window.location.pathname)
-      setError('SSO nevrátilo ID token. Spusťte nové přihlášení přes Vortex SSO; autorizační kód ani access token zde nelze použít.')
-      return
-    }
+      const rawToken = params.get('id_token')
+      if (!rawToken && (params.has('code') || params.has('access_token'))) {
+        window.history.replaceState({}, document.title, window.location.pathname)
+        setError('SSO nevrátilo ID token. Spusťte nové přihlášení přes Vortex SSO; autorizační kód ani access token zde nelze použít.')
+        return
+      }
 
-    if (rawToken) {
-      window.history.replaceState({}, document.title, window.location.pathname)
-      setIsLoading(true)
+      if (rawToken) {
+        window.history.replaceState({}, document.title, window.location.pathname)
+        setIsLoading(true)
 
-      fetch(`${API_BASE}/api/v1/auth/sso`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token: rawToken }),
-      })
-        .then(async (res) => {
-          if (!res.ok) {
-            const errData = await res.json().catch(() => ({}))
-            throw new Error(errData.detail || 'Přihlášení přes Vortex SSO se nezdařilo')
-          }
-          return res.json()
+        fetch(`${API_BASE}/api/v1/auth/sso`, {
+          method: 'POST',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token: rawToken }),
         })
-        .then((data) => {
-          localStorage.setItem('jwt_token', data.access_token)
-          localStorage.setItem('user_role', data.role)
-          navigate('/admin/dashboard', { replace: true })
-        })
-        .catch((err) => {
-          setError(err.message || 'Chyba při ověřování SSO přihlášení')
-        })
-        .finally(() => {
-          setIsLoading(false)
-        })
-    }
+          .then(async (res) => {
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}))
+              throw new Error(errData.detail || 'Přihlášení přes Vortex SSO se nezdařilo')
+            }
+            return res.json()
+          })
+          .then((data) => {
+            localStorage.setItem('jwt_token', data.access_token)
+            localStorage.setItem('user_role', data.role)
+            navigate('/admin/dashboard', { replace: true })
+          })
+          .catch((err) => {
+            if (controller.signal.aborted) return
+            setError(err.message || 'Chyba při ověřování SSO přihlášení')
+          })
+          .finally(() => {
+            if (controller.signal.aborted) return
+            setIsLoading(false)
+          })
+      }
+    })
+    return () => controller.abort()
   }, [navigate])
 
   const handleSubmit = async (e: FormEvent) => {
@@ -97,14 +106,13 @@ function LoginPage() {
       localStorage.setItem('jwt_token', data.access_token)
       localStorage.setItem('user_role', data.role)
       navigate('/admin/dashboard')
-    } catch (err) {
+    } catch {
       setError('Přihlášení se nezdařilo. Zkontrolujte jméno a heslo.')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36)
   const ssoUrl = `https://auth.aznoh.cz/application/o/authorize/?client_id=kcTkisBmdXcInUHLF3nYFfjyn9o5frSt4tJRMnsW&response_type=id_token%20token&scope=openid%20profile%20email%20roles&redirect_uri=https%3A%2F%2Fmetaport.aznoh.cz%2Flogin&nonce=${nonce}`
 
   return (
