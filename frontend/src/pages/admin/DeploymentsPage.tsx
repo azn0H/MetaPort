@@ -1,92 +1,180 @@
-import { useEffect, useState } from 'react'
-import { apiFetch } from '../../config/api'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { AlertCircle, Clock, FileText, FolderGit2, GitBranch, GitFork, HardDrive, KeyRound, Link2, Plus, RefreshCw, Rocket, Settings, Trash2 } from 'lucide-react'
+import { FilterSelect } from '../../components/FilterSelect'
+import { Modal } from '../../components/Modal'
+import { useToast } from '../../components/ToastProvider'
+import { Badge } from '../../components/ui/Badge'
+import { Button } from '../../components/ui/Button'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../components/ui/Card'
+import { Input, SearchInput } from '../../components/ui/Input'
+import { Select } from '../../components/ui/FormControls'
+import { ProjectCardSkeleton } from '../../components/ui/Skeleton'
+import { Tabs } from '../../components/ui/Tabs'
+import { DiskPanel } from '../../components/deployments/DiskPanel'
+import { ProjectEditor, type ProjectConfiguration } from '../../components/deployments/ProjectEditor'
+import { deploymentRequest, deploymentStatuses, formatDate, type DeploymentState, type DiskUsage, type Project } from '../../components/deployments/deploymentTypes'
+import { usePageTitle } from '../../hooks/usePageTitle'
 
-type Connection = { id: string; name: string; provider: string }
-type Repo = { name: string; url: string; branch: string }
-type Project = { id: string; name: string; connection_id: string; repository: string; branch: string; compose_file: string; auto_deploy: boolean; status: string; logs: string[]; commit?: string; environment_keys: string[]; poll_error?: string; previous_images?: Record<string, string> }
-type State = { manager_available?: boolean; connections: Connection[]; projects: Project[] }
-type Disk = { image_bytes: number; images: { id: string; tags: string[]; size: number; shared: number; unique: number | null; containers: number; retained: boolean }[]; recommendations: { text: string; potential_bytes: number | null }[]; notes: string[]; build_cache: unknown[]; volumes: unknown[]; containers: unknown[]; details: unknown[] }
-const bytes = (n: number | null) => n == null ? 'Neznámé' : `${(n / 1024 ** 3).toFixed(2)} GiB`
-const blank = { name: '', connection_id: '', repository: '', branch: 'development', compose_file: 'docker-compose.yml', auto_deploy: false }
+type Tab = 'projects' | 'connections' | 'disk'
+type Removal = { kind: 'projects' | 'connections'; id: string; name: string }
+const emptyConnection = { name: '', provider: 'github', token: '' }
+
 export default function DeploymentsPage() {
-  const [state, setState] = useState<State>({ connections: [], projects: [] })
-  const [error, setError] = useState('')
-  const [connection, setConnection] = useState({ name: '', provider: 'github', token: '' })
-  const [form, setForm] = useState(blank)
-  const [editing, setEditing] = useState('new')
-  const [environment, setEnvironment] = useState('')
-  const [replaceEnv, setReplaceEnv] = useState(false)
-  const [repos, setRepos] = useState<Repo[]>([])
-  const [page, setPage] = useState(1)
-  const [more, setMore] = useState(false)
-  const [disk, setDisk] = useState<Disk | null>(null)
-  const [busy, setBusy] = useState(false)
-  async function request(path: string, method = 'GET', body?: unknown) {
-    const response = await apiFetch('/api/v1/deployments' + path, { method, headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
-    const result = await response.json()
-    if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Požadavek byl odmítnut; ověřte zadané hodnoty.')
-    return result
-  }
-  async function refresh() { setState(await request('')) }
-  async function action(task: () => Promise<void>) {
-    setBusy(true); setError('')
-    try { await task(); await refresh() } catch (e) { setError(e instanceof Error ? e.message : 'Operace selhala') } finally { setBusy(false) }
-  }
-  useEffect(() => {
-    let active = true
-    const load = async () => { try { const data = await request(''); if (active) setState(data) } catch (e) { if (active) setError(e instanceof Error ? e.message : 'Načtení selhalo') } }
-    void load(); const timer = setInterval(() => void load(), 5000)
-    return () => { active = false; clearInterval(timer) }
+  usePageTitle('Nasazování a disk')
+  const { showToast } = useToast()
+  const [state, setState] = useState<DeploymentState>({ connections: [], projects: [] })
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [tab, setTab] = useState<Tab>('projects')
+  const [operation, setOperation] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [projectOpen, setProjectOpen] = useState(false)
+  const [editing, setEditing] = useState<Project | null>(null)
+  const [connectionOpen, setConnectionOpen] = useState(false)
+  const [connection, setConnection] = useState(emptyConnection)
+  const [removal, setRemoval] = useState<Removal | null>(null)
+  const [logsId, setLogsId] = useState<string | null>(null)
+  const [disk, setDisk] = useState<DiskUsage | null>(null)
+  const [diskLoading, setDiskLoading] = useState(false)
+  const [diskError, setDiskError] = useState('')
+  const [measuredAt, setMeasuredAt] = useState<number | null>(null)
+
+  const refresh = useCallback(async () => {
+    setState(await deploymentRequest<DeploymentState>(''))
+    setLoadError('')
   }, [])
-  const input = 'w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-2'
-  const card = 'rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-3'
-  const button = 'rounded-lg bg-cyan-700 text-white px-4 py-2 disabled:opacity-50'
+  useEffect(() => {
+    const controller = new AbortController()
+    let fetching = false
+    async function load() {
+      if (fetching) return
+      fetching = true
+      try {
+        const data = await deploymentRequest<DeploymentState>('', 'GET', undefined, controller.signal)
+        if (!controller.signal.aborted) { setState(data); setLoadError('') }
+      } catch (error) {
+        if (!controller.signal.aborted) setLoadError(error instanceof Error ? error.message : 'Data se nepodařilo načíst.')
+      } finally {
+        fetching = false
+        if (!controller.signal.aborted) setLoading(false)
+      }
+    }
+    void load()
+    const timer = setInterval(() => void load(), 5000)
+    return () => { controller.abort(); clearInterval(timer) }
+  }, [])
+
+  async function mutate(name: string, task: () => Promise<void>, message: string): Promise<boolean> {
+    setOperation(name)
+    try {
+      await task()
+      showToast(message, 'success')
+      if (name !== 'refresh') {
+        try { await refresh() } catch { setLoadError('Změna je uložená, ale přehled se nepodařilo obnovit.') }
+      }
+      return true
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Operace selhala.', 'error')
+      return false
+    } finally { setOperation(null) }
+  }
+  async function loadDisk() {
+    if (diskLoading) return
+    setDiskLoading(true); setDiskError('')
+    try { setDisk(await deploymentRequest<DiskUsage>('/disk')); setMeasuredAt(Date.now()) }
+    catch (error) { const message = error instanceof Error ? error.message : 'Diagnostiku nelze načíst.'; setDiskError(message); showToast(message, 'error') }
+    finally { setDiskLoading(false) }
+  }
+  function changeTab(next: Tab) {
+    setTab(next)
+    if (next === 'disk' && !disk) void loadDisk()
+  }
+  function newProject() {
+    if (!state.connections.length) { setTab('connections'); setConnection(emptyConnection); setConnectionOpen(true); return }
+    setEditing(null); setProjectOpen(true)
+  }
+  async function saveProject(id: string, data: ProjectConfiguration) {
+    return mutate('save-project', async () => { await deploymentRequest('/projects/' + id, 'PUT', data) }, id === 'new' ? 'Projekt byl přidán.' : 'Nastavení projektu bylo uloženo.')
+  }
+  async function connect(event: FormEvent) {
+    event.preventDefault()
+    if (await mutate('connect', async () => { await deploymentRequest('/connections', 'POST', connection) }, 'Připojení bylo uloženo.')) {
+      setConnectionOpen(false); setConnection(emptyConnection)
+    }
+  }
+  function closeConnection() { if (!operation) { setConnectionOpen(false); setConnection(emptyConnection) } }
+  async function removeConfiguration() {
+    if (!removal) return
+    if (await mutate('remove', async () => { await deploymentRequest('/' + removal.kind + '/' + removal.id, 'DELETE') }, removal.kind === 'projects' ? 'Konfigurace byla odebrána. Kontejnery a data zůstávají.' : 'Git připojení bylo odpojeno.')) setRemoval(null)
+  }
+  const filtered = state.projects.filter(project => (statusFilter === 'all' || project.status === statusFilter) && `${project.name} ${project.repository} ${project.branch}`.toLowerCase().includes(search.toLowerCase()))
+  const logProject = state.projects.find(project => project.id === logsId)
+  const busy = operation !== null
+
   return <div className="space-y-6">
-    <h1 className="text-2xl font-bold">Nasazování a disk</h1>
-    {state.manager_available === false && <p className="text-amber-600">Nasazovací worker není aktivní. Na Windows neběží; na Pi ověřte backend a oprávnění úložiště.</p>}
-    <p>Správce na Pi kontroluje větve každou minutu. Nasazuje pouze důvěryhodné repozitáře. Compose spouští kód s přístupem k hostiteli.</p>
-    {error && <p role="alert" className="text-red-600">{error}</p>}
-    <section className={card}><h2 className="font-semibold">Připojení GitHub / GitLab.com</h2>
-      <form className="grid md:grid-cols-4 gap-3" onSubmit={e => { e.preventDefault(); void action(async () => { await request('/connections', 'POST', connection); setConnection({ ...connection, token: '' }) }) }}>
-        <label>Název<input required className={input} value={connection.name} onChange={e => setConnection({ ...connection, name: e.target.value })} /></label>
-        <label>Provider<select className={input} value={connection.provider} onChange={e => setConnection({ ...connection, provider: e.target.value })}><option value="github">GitHub</option><option value="gitlab">GitLab.com</option></select></label>
-        <label>Přístupový token<input required type="password" autoComplete="new-password" className={input} value={connection.token} onChange={e => setConnection({ ...connection, token: e.target.value })} /></label>
-        <button disabled={busy} className={button}>Připojit</button>
-      </form>
-      <p className="text-sm text-zinc-500">Token potřebuje čtení repozitářů a API seznamu. Po uložení se nevrací do prohlížeče.</p>
-      {state.connections.map(c => <div key={c.id} className="flex gap-3 items-center"><span>{c.name} · {c.provider}</span><button disabled={busy} onClick={() => void action(async () => { await request('/connections/' + c.id, 'DELETE') })}>Odpojit</button></div>)}
-    </section>
-    <section className={card}><h2 className="font-semibold">{editing === 'new' ? 'Nový projekt' : 'Nastavení projektu'}</h2>
-      <form className="space-y-3" onSubmit={e => { e.preventDefault(); void action(async () => {
-        let env: Record<string, string> | undefined
-        if (replaceEnv) { env = {}; for (const line of environment.split('\n').filter(Boolean)) { const index = line.indexOf('='); if (index < 1) throw new Error('Prostředí zadávejte jako KEY=value'); env[line.slice(0, index)] = line.slice(index + 1) } }
-        await request('/projects/' + editing, 'PUT', { ...form, environment: env }); setForm(blank); setEditing('new'); setEnvironment(''); setReplaceEnv(false)
-      }) }}>
-      <div className="grid md:grid-cols-2 gap-3">
-        <label>Název (malá písmena, čísla, pomlčky)<input required pattern="[a-z][a-z0-9-]{1,40}" className={input} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label>
-        <label>Připojení<select required className={input} value={form.connection_id} onChange={e => { setForm({ ...form, connection_id: e.target.value, repository: '' }); setRepos([]); setPage(1); setMore(false) }}><option value="">Vyberte</option>{state.connections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div><div className="flex items-center gap-2"><h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Nasazování a disk</h1><Badge variant="zinc">{state.projects.length}</Badge></div><p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Správa Compose projektů, Git připojení a využití Docker disku.</p></div>
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="outline" isLoading={operation === 'refresh'} disabled={busy} leftIcon={<RefreshCw className="w-3.5 h-3.5" />} onClick={() => void mutate('refresh', refresh, 'Přehled byl obnoven.')}>Obnovit</Button>
+        {tab !== 'disk' && <Button size="sm" variant="primary" disabled={busy || loading} leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={tab === 'connections' ? () => { setConnection(emptyConnection); setConnectionOpen(true) } : newProject}>{tab === 'connections' ? 'Přidat připojení' : 'Nový projekt'}</Button>}
       </div>
-      <button type="button" disabled={busy || !form.connection_id} className={button} onClick={() => void action(async () => { const data = await request('/repositories/' + form.connection_id + '?page=1'); setRepos(data.items); setPage(1); setMore(data.has_more) })}>Načíst repozitáře</button>
-      {more && <button type="button" disabled={busy} onClick={() => void action(async () => { const data = await request('/repositories/' + form.connection_id + '?page=' + (page + 1)); setRepos([...repos, ...data.items]); setPage(page + 1); setMore(data.has_more) })}>Další stránka</button>}
-      <label className="block">Repozitář<select className={input} value={form.repository} onChange={e => { const r = repos.find(r => r.url === e.target.value); setForm({ ...form, repository: e.target.value, branch: r?.branch || form.branch }) }}><option value="">Vyberte repozitář</option>{form.repository && !repos.some(r => r.url === form.repository) && <option value={form.repository}>{form.repository}</option>}{repos.map(r => <option key={r.url} value={r.url}>{r.name}</option>)}</select></label>
-      <div className="grid md:grid-cols-2 gap-3"><label>Větev<input required className={input} value={form.branch} onChange={e => setForm({ ...form, branch: e.target.value })} /></label><label>Compose cesta v repozitáři<input required className={input} value={form.compose_file} onChange={e => setForm({ ...form, compose_file: e.target.value })} /></label></div>
-      <label className="block"><input type="checkbox" checked={form.auto_deploy} onChange={e => setForm({ ...form, auto_deploy: e.target.checked })} /> Automatické nasazování</label>
-      <label className="block"><input type="checkbox" checked={replaceEnv} onChange={e => setReplaceEnv(e.target.checked)} /> Nahradit celé prostředí projektu (prázdné pole jej vymaže)</label>
-      {replaceEnv && <label className="block">KEY=value, jeden řádek na proměnnou<textarea autoComplete="off" className={input} value={environment} onChange={e => setEnvironment(e.target.value)} /></label>}
-      <button disabled={busy || !form.repository} className={button}>Uložit konfiguraci</button> <button type="button" onClick={() => { setEditing('new'); setForm(blank); setEnvironment(''); setReplaceEnv(false) }}>Nový projekt</button>
+    </div>
+    <div className="overflow-x-auto pb-1"><Tabs<Tab> activeTab={tab} onChange={changeTab} tabs={[
+      { id: 'projects', label: 'Projekty', icon: FolderGit2, badge: state.projects.length },
+      { id: 'connections', label: 'Připojení', icon: Link2, badge: state.connections.length },
+      { id: 'disk', label: 'Diagnostika disku', icon: HardDrive },
+    ]} /></div>
+    {loadError && <Card role="alert" className="p-4 flex items-center gap-3 border-rose-200 dark:border-rose-500/20"><AlertCircle className="w-5 h-5 text-rose-500 shrink-0" /><p className="text-sm text-rose-600 dark:text-rose-400">{loadError}</p></Card>}
+    {state.manager_available === false && <Card variant="subtle" className="p-4 flex gap-3"><AlertCircle className="w-5 h-5 text-amber-500 shrink-0" /><div><p className="text-sm font-medium">Nasazovací správce není aktivní</p><p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Na Windows worker neběží. Na Pi ověřte backend a oprávnění úložiště.</p></div></Card>}
+
+    {tab === 'projects' && <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-3"><SearchInput aria-label="Hledat projekt" placeholder="Hledat projekt, repozitář…" value={search} onChange={event => setSearch(event.target.value)} /><FilterSelect value={statusFilter} onChange={setStatusFilter} icon={Rocket} options={[{ value: 'all', label: 'Všechny stavy' }, ...Object.entries(deploymentStatuses).map(([value, status]) => ({ value, label: status.label }))]} /><span className="text-xs text-zinc-500 dark:text-zinc-400 ml-auto">Průběh se obnovuje automaticky</span></div>
+      {loading ? <div className="grid md:grid-cols-2 gap-4">{[0, 1].map(index => <ProjectCardSkeleton key={index} />)}</div> : !state.projects.length ? <Card className="p-10 text-center"><div className="w-14 h-14 rounded-2xl bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mx-auto mb-4"><FolderGit2 className="w-7 h-7" /></div><h2 className="font-semibold text-zinc-900 dark:text-white">Zatím žádné nasazované projekty</h2><p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2 mb-5">{state.connections.length ? 'Vyberte repozitář, sledovanou větev a Compose soubor.' : 'Nejprve připojte GitHub nebo GitLab a potom vyberte repozitář.'}</p><Button variant="primary" onClick={newProject} leftIcon={<Plus className="w-4 h-4" />}>{state.connections.length ? 'Přidat první projekt' : 'Připojit Git účet'}</Button></Card> : !filtered.length ? <Card className="p-10 text-center"><p className="text-sm text-zinc-500">Žádný projekt neodpovídá filtru.</p><Button variant="ghost" size="sm" className="mt-3" onClick={() => { setSearch(''); setStatusFilter('all') }}>Vymazat filtry</Button></Card> : <div className="grid md:grid-cols-2 gap-4">
+        {filtered.map(project => {
+          const status = deploymentStatuses[project.status] || deploymentStatuses.idle
+          const deploying = ['running', 'queued'].includes(project.status)
+          return <Card key={project.id} hover className="flex flex-col">
+            <CardHeader><div className="flex items-center gap-3 min-w-0"><div className="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-500/10 flex items-center justify-center shrink-0"><FolderGit2 className="w-5 h-5 text-cyan-600 dark:text-cyan-400" /></div><div className="min-w-0"><CardTitle className="truncate">{project.name}</CardTitle><CardDescription>{state.connections.find(item => item.id === project.connection_id)?.name || 'Git projekt'}</CardDescription></div></div><Badge variant={status.variant} dot pulse={deploying}>{status.label}</Badge></CardHeader>
+            <CardContent className="space-y-3 flex-1"><p className="text-xs text-zinc-500 dark:text-zinc-400 break-all">{project.repository.replace(/^https:\/\//, '').replace(/\.git$/, '')}</p>
+              <div className="flex items-center flex-wrap gap-2"><Badge variant="zinc"><GitBranch className="w-3 h-3 mr-1" />{project.branch}</Badge><Badge variant={project.auto_deploy ? 'cyan' : 'zinc'}>{project.auto_deploy ? 'Automaticky' : 'Ruční nasazení'}</Badge><span className="text-xs text-zinc-500 break-all">{project.compose_file}</span></div>
+              <div className="border-t border-zinc-200 dark:border-zinc-800/60 pt-3 space-y-2 text-xs"><div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400"><Clock className="w-3.5 h-3.5 shrink-0" /><span>{project.finished_at ? `Poslední pokus: ${formatDate(project.finished_at)}` : 'Zatím bez nasazení'}</span></div><p className="text-zinc-500">Úspěšný commit: <span className="font-mono text-zinc-700 dark:text-zinc-300">{project.commit?.slice(0, 8) || 'Žádný'}</span></p>{project.checked_at && <p className="text-zinc-500">Kontrola větve: {formatDate(project.checked_at)}</p>}</div>
+              {project.poll_error && <p className="text-xs text-amber-600 dark:text-amber-400">{project.poll_error}</p>}
+            </CardContent>
+            <CardFooter className="gap-2 flex-wrap"><Button size="sm" variant="primary" disabled={busy || deploying || !state.manager_available} isLoading={operation === 'deploy-' + project.id} leftIcon={<Rocket className="w-3.5 h-3.5" />} onClick={() => void mutate('deploy-' + project.id, async () => { await deploymentRequest('/projects/' + project.id + '/deploy', 'POST') }, 'Nasazení bylo zařazeno do fronty.')}>{deploying ? 'Probíhá nasazení' : 'Nasadit'}</Button><Button size="sm" variant="outline" leftIcon={<FileText className="w-3.5 h-3.5" />} onClick={() => setLogsId(project.id)}>Průběh a logy</Button><div className="flex gap-1 ml-auto"><Button size="icon" variant="ghost" aria-label={`Upravit projekt ${project.name}`} title="Upravit projekt" disabled={busy || deploying} onClick={() => { setEditing(project); setProjectOpen(true) }}><Settings className="w-4 h-4" /></Button><Button size="icon" variant="ghost" aria-label={`Odebrat konfiguraci ${project.name}`} title="Odebrat konfiguraci" disabled={busy || deploying} onClick={() => setRemoval({ kind: 'projects', id: project.id, name: project.name })}><Trash2 className="w-4 h-4 text-rose-500" /></Button></div></CardFooter>
+          </Card>
+        })}
+      </div>}
+    </div>}
+
+    {tab === 'connections' && <div className="space-y-5">
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">Přístupové údaje jsou uložené šifrovaně. Každý projekt si vybírá vlastní připojení.</p>
+      {loading ? <div className="grid md:grid-cols-2 gap-4">{[0, 1].map(index => <ProjectCardSkeleton key={index} />)}</div> : !state.connections.length ? <Card className="p-10 text-center"><KeyRound className="w-10 h-10 text-zinc-400 mx-auto mb-4" /><h2 className="font-semibold">Žádné Git připojení</h2><p className="text-sm text-zinc-500 mt-2 mb-5">Připojte GitHub nebo GitLab pomocí tokenu pro čtení repozitářů.</p><Button variant="primary" onClick={() => { setConnection(emptyConnection); setConnectionOpen(true) }} leftIcon={<Plus className="w-4 h-4" />}>Přidat připojení</Button></Card> : <div className="grid md:grid-cols-2 gap-4">{state.connections.map(item => {
+        const projectCount = state.projects.filter(project => project.connection_id === item.id).length
+        const Icon = item.provider === 'github' ? FolderGit2 : GitFork
+        return <Card key={item.id}><CardHeader><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"><Icon className="w-5 h-5 text-zinc-600 dark:text-zinc-300" /></div><div><CardTitle>{item.name}</CardTitle><CardDescription>{item.provider === 'github' ? 'GitHub' : 'GitLab.com'}</CardDescription></div></div><Badge variant="emerald">Uloženo</Badge></CardHeader><CardContent><p className="text-xs text-zinc-500 dark:text-zinc-400">{projectCount ? `Používá ${projectCount} projektů` : 'Zatím bez přiřazených projektů'}</p></CardContent><CardFooter><Button size="sm" variant="danger" disabled={busy || projectCount > 0} title={projectCount ? 'Nejprve změňte připojení přiřazených projektů.' : undefined} leftIcon={<Trash2 className="w-3.5 h-3.5" />} onClick={() => setRemoval({ kind: 'connections', id: item.id, name: item.name })}>Odpojit</Button></CardFooter></Card>
+      })}</div>}
+    </div>}
+    {tab === 'disk' && <>{diskError && <Card role="alert" className="p-4 text-sm text-rose-600 dark:text-rose-400">{diskError}{disk && <p className="text-xs mt-1">Níže je zobrazené předchozí úspěšné měření.</p>}</Card>}<DiskPanel data={disk} loading={diskLoading} measuredAt={measuredAt} onRefresh={() => void loadDisk()} /></>}
+
+    {projectOpen && <ProjectEditor key={editing?.id || 'new'} project={editing} connections={state.connections} saving={operation === 'save-project'} onClose={() => setProjectOpen(false)} onSave={saveProject} />}
+    <Modal isOpen={connectionOpen} onClose={closeConnection} title={<><KeyRound className="w-5 h-5 text-cyan-500" />Přidat Git připojení</>}>
+      <form onSubmit={event => void connect(event)} className="p-6 space-y-5">
+        <Input label="Název připojení" required maxLength={80} placeholder="GitHub – osobní projekty" value={connection.name} disabled={busy} onChange={event => setConnection({ ...connection, name: event.target.value })} />
+        <Select label="Provider" value={connection.provider} disabled={busy} onChange={event => setConnection({ ...connection, provider: event.target.value })}><option value="github">GitHub</option><option value="gitlab">GitLab.com</option></Select>
+        <Input label="Přístupový token" type="password" autoComplete="new-password" required maxLength={4096} value={connection.token} disabled={busy} onChange={event => setConnection({ ...connection, token: event.target.value })} helperText={connection.provider === 'github' ? 'Token s přístupem ke zvoleným repozitářům a čtením jejich obsahu.' : 'Token s oprávněními read_api a read_repository.'} />
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">Po uložení se token nevrací do prohlížeče ani nezobrazuje v logu.</p>
+        <div className="flex justify-end gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-800"><Button type="button" variant="ghost" disabled={busy} onClick={closeConnection}>Zrušit</Button><Button type="submit" variant="primary" isLoading={operation === 'connect'} leftIcon={<Link2 className="w-4 h-4" />}>Připojit</Button></div>
       </form>
-    </section>
-    {state.projects.map(p => <section key={p.id} className={card}><div className="flex flex-wrap gap-3 items-center"><h2 className="font-semibold">{p.name}</h2><span>{p.status}</span><span>{p.auto_deploy ? 'Automaticky' : 'Ručně'}</span><button disabled={busy || ['running', 'queued'].includes(p.status)} className={button} onClick={() => void action(async () => { await request('/projects/' + p.id + '/deploy', 'POST') })}>Nasadit</button><button onClick={() => { setEditing(p.id); setForm({ name: p.name, connection_id: p.connection_id, repository: p.repository, branch: p.branch, compose_file: p.compose_file, auto_deploy: p.auto_deploy }); setEnvironment(''); setReplaceEnv(false); setRepos([]) }}>Upravit</button><button disabled={busy || ['running', 'queued'].includes(p.status)} onClick={() => void action(async () => { await request('/projects/' + p.id, 'DELETE') })}>Odebrat konfiguraci (kontejnery zůstanou)</button></div>
-      <p className="break-all">{p.repository} · {p.branch} · {p.compose_file}</p><p>Poslední úspěšný commit: {p.commit || 'Žádný'} · Prostředí: {p.environment_keys.join(', ') || 'Prázdné'}</p>{p.poll_error && <p className="text-amber-600">{p.poll_error}</p>}
-      <pre className="whitespace-pre-wrap text-xs bg-zinc-100 dark:bg-zinc-950 rounded-lg p-3">{p.logs.join('\n') || 'Zatím bez nasazení'}</pre>
-      {p.previous_images && <details><summary>Images zachované pro ruční obnovu</summary><pre className="whitespace-pre-wrap text-xs">{JSON.stringify(p.previous_images, null, 2)}</pre></details>}
-    </section>)}
-    <section className={card}><h2 className="font-semibold">Diagnostika disku</h2><button disabled={busy} className={button} onClick={() => void action(async () => setDisk(await request('/disk')))}>Změřit Docker</button>
-      {disk && <><p>Image vrstvy se sdílenými daty započtenými jednou: <strong>{bytes(disk.image_bytes)}</strong></p>{disk.notes.map(n => <p key={n} className="text-sm text-zinc-500">{n}</p>)}
-      <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr>{['Image', 'Logická velikost', 'Sdílené', 'Unikátní', 'Kontejnery'].map(h => <th key={h} className="text-left p-2">{h}</th>)}</tr></thead><tbody>{disk.images.map(i => <tr key={i.id}><td className="p-2 break-all">{i.tags?.join(', ') || i.id.slice(0, 20)}{i.retained && ' (obnova)'}</td><td>{bytes(i.size)}</td><td>{bytes(i.shared < 0 ? null : i.shared)}</td><td>{bytes(i.unique)}</td><td>{i.containers}</td></tr>)}</tbody></table></div>
-      <h3 className="font-semibold">Doporučení podle měření</h3>{disk.recommendations.length ? disk.recommendations.map((r, i) => <p key={i}>{r.text} {r.potential_bytes != null && `Potenciál: ${bytes(r.potential_bytes)} (odhady nesčítejte).`}</p>) : <p>Žádný doložitelný kandidát na úsporu.</p>}
-      {(['build_cache', 'containers', 'volumes', 'details'] as const).map(key => <details key={key}><summary>{({ build_cache: 'Build cache', containers: 'Zapisovatelné vrstvy kontejnerů', volumes: 'Volumes', details: 'Logy a bind mounty (null = nezměřeno)' })[key]}</summary><pre className="text-xs overflow-auto max-h-96">{JSON.stringify(disk[key], null, 2)}</pre></details>)}
-      </>}
-    </section>
+    </Modal>
+    <Modal isOpen={removal !== null} onClose={() => { if (!busy) setRemoval(null) }} title={<><Trash2 className="w-5 h-5 text-rose-500" />{removal?.kind === 'projects' ? 'Odebrat konfiguraci projektu' : 'Odpojit Git připojení'}</>}>
+      <div className="p-6 space-y-5"><p className="text-sm text-zinc-700 dark:text-zinc-300">{removal?.kind === 'projects' ? <>Odebrat správu projektu <strong>{removal.name}</strong>? Automatické nasazování se zastaví. Běžící kontejnery, images a data zůstanou zachované.</> : <>Odpojit <strong>{removal?.name}</strong>? Uložený token bude z konfigurace odstraněn.</>}</p><div className="flex justify-end gap-2"><Button variant="ghost" disabled={busy} onClick={() => setRemoval(null)}>Zrušit</Button><Button variant="danger" isLoading={operation === 'remove'} onClick={() => void removeConfiguration()}>{removal?.kind === 'projects' ? 'Odebrat konfiguraci' : 'Odpojit'}</Button></div></div>
+    </Modal>
+    <Modal isOpen={Boolean(logProject)} onClose={() => setLogsId(null)} maxWidth="max-w-3xl" title={<><FileText className="w-5 h-5 text-cyan-500" />Průběh nasazení · {logProject?.name}</>}>
+      {logProject && <div className="p-6 space-y-4"><div className="flex items-center justify-between gap-3"><Badge variant={(deploymentStatuses[logProject.status] || deploymentStatuses.idle).variant}>{(deploymentStatuses[logProject.status] || deploymentStatuses.idle).label}</Badge><p className="text-xs text-zinc-500">Průběh se obnovuje automaticky</p></div><pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 text-xs leading-relaxed font-mono text-zinc-700 dark:text-zinc-300">{logProject.logs.join('\n') || 'Projekt zatím nebyl nasazen.'}</pre>
+        {Object.keys(logProject.previous_images || {}).length > 0 && <div className="space-y-2"><h3 className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Images zachované pro ruční obnovu</h3>{Object.entries(logProject.previous_images || {}).map(([service, image]) => <div key={service} className="text-xs flex flex-col sm:flex-row gap-1 sm:gap-3"><span className="font-semibold text-zinc-700 dark:text-zinc-300">{service}</span><code className="break-all text-zinc-500 dark:text-zinc-400">{image}</code></div>)}</div>}
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">Zobrazuje se bezpečný fázový log. Bez healthchecku se ověřuje pouze stav kontejneru. Databázové migrace se automaticky nevracejí.</p><div className="flex justify-end"><Button variant="outline" onClick={() => setLogsId(null)}>Zavřít</Button></div>
+      </div>}
+    </Modal>
   </div>
 }
