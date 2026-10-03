@@ -8,6 +8,9 @@ from typing import Optional, List
 from urllib.parse import parse_qs
 from collections import defaultdict
 import time
+import socket
+import ssl
+from urllib.error import HTTPError, URLError
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -271,8 +274,22 @@ async def sso_login(data: SSORequest, db: Session = Depends(get_db)):
         payload = jwt.decode(data.token, signing_key.key, algorithms=["RS256"], issuer=issuer, audience=audience, options={"require": ["exp", "iss", "aud", "sub"]})
     except HTTPException:
         raise
-    except jwt.exceptions.PyJWKClientConnectionError:
-        raise HTTPException(status_code=503, detail="SSO: backend se nemůže spojit s poskytovatelem podpisových klíčů. Zkuste přihlášení znovu.")
+    except jwt.exceptions.PyJWKClientConnectionError as exc:
+        cause = exc.__cause__
+        reason = cause.reason if isinstance(cause, URLError) else cause
+        if isinstance(cause, HTTPError):
+            diagnostic = 'poskytovatel klíčů vrací HTTP ' + str(cause.code)
+        elif isinstance(reason, socket.gaierror):
+            diagnostic = 'DNS nedokáže přeložit adresu poskytovatele klíčů'
+        elif isinstance(reason, ssl.SSLCertVerificationError):
+            diagnostic = 'TLS certifikát poskytovatele klíčů nelze ověřit'
+        elif isinstance(reason, TimeoutError):
+            diagnostic = 'spojení s poskytovatelem klíčů překročilo časový limit'
+        elif isinstance(reason, ConnectionRefusedError):
+            diagnostic = 'poskytovatel klíčů odmítá síťové spojení'
+        else:
+            diagnostic = 'poskytovatel podpisových klíčů není z backendu dostupný'
+        raise HTTPException(status_code=503, detail='SSO: ' + diagnostic + '.')
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=400, detail="SSO token vypršel. Spusťte nové přihlášení přes Vortex SSO.")
     except jwt.InvalidAudienceError:
