@@ -75,6 +75,7 @@ export function ProjectEditor({ project, connections, saving, onClose, onSave }:
   }
   return <Modal isOpen onClose={() => { if (!saving) onClose() }} maxWidth="max-w-2xl" title={<><FolderGit2 className="w-5 h-5 text-cyan-500" />{project ? 'Upravit projekt' : 'Nový projekt'}</>}>
     <form onSubmit={event => void submit(event)} className="p-6 space-y-5">
+      {project?.adopted_stack && <p className="text-sm text-cyan-600 dark:text-cyan-400">Převzatý stack: {project.adopted_stack.name}. Používá původní volumes a hostitelské konfigurace.</p>}
       <div className="grid sm:grid-cols-2 gap-4">
         <Input label="Název projektu" required minLength={2} maxLength={41} error={nameError} placeholder="moje-aplikace" disabled={saving || Boolean(project?.commit)} value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} helperText={project?.commit ? 'Název je svázaný s kontejnery a volumes.' : 'Písmena, čísla a pomlčky. Velká písmena se při uložení převedou na malá.'} />
         <Select label="Git připojení" required disabled={saving || loading} value={form.connection_id} onChange={event => {

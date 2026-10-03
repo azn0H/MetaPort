@@ -137,7 +137,7 @@ def save_project(pid: str, data: Project):
         if old is None:
             old = {'id': uuid.uuid4().hex, 'status': 'idle', 'logs': [], 'history': []}
             state['projects'].append(old)
-        if old.get('history') and old.get('name') != data.name:
+        if (old.get('history') or old.get('adopted_stack')) and old.get('name') != data.name:
             raise HTTPException(400, 'Název již nasazeného projektu nelze změnit: je svázaný s volumes a kontejnery')
         changed = any(old.get(k) != getattr(data, k) for k in ('repository', 'branch', 'compose_file', 'connection_id'))
         old.update(data.model_dump(exclude={'environment'}))
@@ -225,7 +225,9 @@ def deploy(p, c):
     release.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     try:
         client = docker.from_env()
-        if client.containers.list(all=True, filters={'label': 'com.docker.compose.project=' + p['name']}):
+        adoption = p.get('adopted_stack', {})
+        stack = adoption.get('name') or 'mp-' + p['name']
+        if not adoption and client.containers.list(all=True, filters={'label': 'com.docker.compose.project=' + p['name']}):
             raise RuntimeError('Na hostiteli již existuje Compose stack ' + p['name'] + '. Nejprve nastavte jeho převzetí se zachováním prostředí a volumes; nové nasazení by vytvořilo jiný stack mp-' + p['name'] + '.')
         event(pid, '1/5 Stahování sledované větve')
         command(['git', '-c', 'credential.helper=', 'clone', '--depth', '1', '--single-branch', '--branch', p['branch'], '--', p['repository'], str(release)], env=git_environment(c), timeout=300)
@@ -238,16 +240,24 @@ def deploy(p, c):
         envfile = control / 'project.env'
         envfile.write_text('\n'.join(k + '=' + "'" + v.replace("'", "\\'") + "'" for k, v in p.get('environment', {}).items()))
         envfile.chmod(0o600)
-        base = ['docker', 'compose', '--project-name', 'mp-' + p['name'], '--project-directory', str(release), '--env-file', str(envfile), '-f', str(compose)]
+        base = ['docker', 'compose', '--project-name', stack, '--project-directory', str(release), '--env-file', str(envfile), '-f', str(compose)]
+        if adoption:
+            mounts = control / 'adopted-mounts.json'
+            mounts.write_text(json.dumps({'services': {name: {'volumes': volumes} for name, volumes in adoption.get('binds', {}).items()}}))
+            base += ['-f', str(mounts)]
         event(pid, '2/5 Validace konfigurace a zachování předchozích images')
         config = json.loads(command(base + ['config', '--format', 'json'], release))
+        if adoption:
+            actual = {v['name'] for v in config.get('volumes', {}).values()}
+            if actual != set(adoption['volumes']):
+                raise RuntimeError('Konfigurace mění volumes převzatého stacku. Před nasazením je nutné ověřit migraci dat.')
         for service in config['services'].values():
             for mount in service.get('volumes', []):
                 if mount.get('type') == 'bind' and Path(mount['source']).resolve().is_relative_to(release.resolve()):
                     raise RuntimeError('Bind mount uvnitř release není stabilní mezi nasazeními. Použijte absolutní hostitelskou cestu nebo named volume.')
         client = docker.from_env()
         previous = {}
-        for container in client.containers.list(all=True, filters={'label': 'com.docker.compose.project=mp-' + p['name']}):
+        for container in client.containers.list(all=True, filters={'label': 'com.docker.compose.project=' + stack}):
             service = container.labels.get('com.docker.compose.service')
             if service:
                 tag = 'metaport-retained/' + pid + ':' + service + '-' + str(int(time.time()))

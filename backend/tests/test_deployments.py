@@ -143,6 +143,16 @@ class DeploymentTests(unittest.TestCase):
         command.assert_not_called()
         self.assertIn('již existuje Compose stack', d.read()['projects'][0]['logs'][0])
 
+    def test_adoption_uses_existing_namespace_and_refuses_changed_volumes(self):
+        self.project['adopted_stack'] = {'name': 'example', 'binds': {}, 'volumes': ['example_db']}
+        calls = []
+        with patch.object(d, 'command', side_effect=self.fake_command(calls)), patch.object(d.docker, 'from_env', return_value=self.docker_client()):
+            d.deploy(self.project, d.read()['connections'][0])
+        config = next(a for a in calls if 'config' in a)
+        self.assertEqual(config[config.index('--project-name') + 1], 'example')
+        self.assertFalse(any('build' in a or 'up' in a for a in calls))
+        self.assertIn('mění volumes', d.read()['projects'][0]['logs'][-1])
+
     def test_missing_variable_error_does_not_expose_output(self):
         def failed(args, **kwargs):
             kwargs['stdout'].write(b'required variable AUTHENTIK_SECRET_KEY is missing a value: secret-password')

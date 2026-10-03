@@ -5,6 +5,7 @@ export type Repository = { name: string; url: string; branch: string }
 export type Project = {
   id: string; name: string; connection_id: string; repository: string; branch: string; compose_file: string
   auto_deploy: boolean; status: string; logs: string[]; commit?: string; environment_keys: string[]
+  adopted_stack?: { name: string }
   poll_error?: string; previous_images?: Record<string, string>; started_at?: number; finished_at?: number; checked_at?: number
 }
 export type DeploymentState = { manager_available?: boolean; connections: Connection[]; projects: Project[] }
