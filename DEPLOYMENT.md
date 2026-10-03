@@ -51,3 +51,11 @@ Lokální testy používají skutečné API a šifrované úložiště s izolova
 ## Lokální výsledky ověření
 
 Produkční build frontendu (`tsc -b` a Vite) prošel. Backend API/regresní testy ověřují autorizaci, šifrování a skrytí secrets, validaci vstupů, zachování prostředí, build failure bez `up/down`, úspěšné nasazení s `--wait`, selhání healthchecku, odmítnutí nestabilních bind mountů a deduplikaci diagnostiky. Testy Git/Docker operace izolují; přístup k reálnému Docker daemonu v této vývojové relaci není dostupný a Pi nebylo kontaktováno.
+
+## Ověření nasazení na Pi – 3. 10. 2026
+
+Rozšíření bylo následně sestavené a nasazené na Raspberry Pi 5 ARM64. Před změnou byly zachované původní images a vytvořená chráněná záloha zdrojů i PostgreSQL. Aktualizované byly pouze MetaPort backend a frontend; databáze a tunel zůstaly běžet.
+
+Ověřeno na skutečném hostiteli: veřejný frontend a API vrací HTTP 200, veřejný frontend servíruje nový DeploymentsPage asset, nové API routes jsou dostupné, deployment worker drží procesový zámek, Git a Compose plugin jsou přítomné, Docker disk diagnostika vrací skutečná data a secret storage používá oprávnění 0600. S výslovným souhlasem bylo původní GitHub připojení převedené do šifrovaného úložiště a seznam repozitářů ověřený přes administrátorské API. Nepřihlášený přístup vrací 401, tajné hodnoty se v odpovědích neobjevují, veřejné SSO JWKS je dostupné a token s neplatným podpisem je odmítnutý.
+
+Při nasazení byl opraven nesoulad implicitního PostgreSQL driveru SQLAlchemy 2.1: existující postgresql:// URL nyní explicitně používají nainstalovaný psycopg2. Pi nemělo nakonfigurovaný GitLab token; nové GitLab připojení je potřeba založit v UI. Plné přihlášení uživatele přes SSO a automatické nasazení konkrétního dalšího projektu zůstávají k ověření po výběru jeho repozitáře, prostředí a datových cest. Funkční worker a diagnostika nejsou důkazem bezpečné migrace cizí aplikace nebo databáze.
