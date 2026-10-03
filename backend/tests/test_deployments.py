@@ -91,7 +91,7 @@ class DeploymentTests(unittest.TestCase):
         image = Mock(attrs={'Size': 100})
         container = SimpleNamespace(labels={'com.docker.compose.service': 'web'}, attrs={'Image': 'sha256:old'})
         client = Mock()
-        client.containers.list.return_value = [container]
+        client.containers.list.side_effect = [[], [container]]
         client.images.get.return_value = image
         return client
 
@@ -130,10 +130,27 @@ class DeploymentTests(unittest.TestCase):
 
     def test_unstable_bind_mount_rejected_before_build(self):
         calls = []
-        with patch.object(d, 'command', side_effect=self.fake_command(calls, relative_bind=True)):
+        with patch.object(d, 'command', side_effect=self.fake_command(calls, relative_bind=True)), patch.object(d.docker, 'from_env', return_value=self.docker_client()):
             d.deploy(self.project, d.read()['connections'][0])
         self.assertFalse(any('build' in a or 'up' in a for a in calls))
         self.assertEqual(d.read()['projects'][0]['status'], 'failed')
+
+    def test_existing_stack_blocks_parallel_installation(self):
+        client = Mock()
+        client.containers.list.return_value = [Mock()]
+        with patch.object(d, 'command') as command, patch.object(d.docker, 'from_env', return_value=client):
+            d.deploy(self.project, d.read()['connections'][0])
+        command.assert_not_called()
+        self.assertIn('již existuje Compose stack', d.read()['projects'][0]['logs'][0])
+
+    def test_missing_variable_error_does_not_expose_output(self):
+        def failed(args, **kwargs):
+            kwargs['stdout'].write(b'required variable AUTHENTIK_SECRET_KEY is missing a value: secret-password')
+            return SimpleNamespace(returncode=1)
+        with patch.object(d.subprocess, 'run', side_effect=failed):
+            with self.assertRaisesRegex(RuntimeError, 'AUTHENTIK_SECRET_KEY') as error:
+                d.command(['docker', 'compose', 'config', '--format', 'json'])
+        self.assertNotIn('secret-password', str(error.exception))
 
     def test_disk_shared_layers_not_summed_and_metadata_filtered(self):
         client = Mock()

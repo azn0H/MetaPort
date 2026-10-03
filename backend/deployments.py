@@ -200,6 +200,12 @@ def command(args, cwd=None, env=None, timeout=1800):
     with tempfile.TemporaryFile() as output:
         result = subprocess.run(args, cwd=cwd, env=env if env is not None else {k: v for k, v in os.environ.items() if k in ('PATH', 'HOME', 'LANG', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP')}, stdout=output, stderr=subprocess.STDOUT, timeout=timeout, check=False)
         if result.returncode:
+            if args[:2] == ['docker', 'compose'] and 'config' in args:
+                output.seek(0)
+                diagnostic = output.read(1024 * 1024).decode('utf-8', errors='replace')
+                missing = re.search(r'required variable ([A-Za-z_][A-Za-z0-9_]{0,127}) is missing a value', diagnostic)
+                if missing:
+                    raise RuntimeError('V prostředí projektu chybí povinná proměnná ' + missing.group(1) + '. Doplňte ji v nastavení prostředí projektu.')
             raise RuntimeError('Příkaz selhal (exit %d)' % result.returncode)
         output.seek(0)
         return output.read(4 * 1024 * 1024).decode('utf-8', errors='replace').strip()
@@ -218,6 +224,9 @@ def deploy(p, c):
     release = ROOT / 'projects' / pid / uuid.uuid4().hex
     release.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     try:
+        client = docker.from_env()
+        if client.containers.list(all=True, filters={'label': 'com.docker.compose.project=' + p['name']}):
+            raise RuntimeError('Na hostiteli již existuje Compose stack ' + p['name'] + '. Nejprve nastavte jeho převzetí se zachováním prostředí a volumes; nové nasazení by vytvořilo jiný stack mp-' + p['name'] + '.')
         event(pid, '1/5 Stahování sledované větve')
         command(['git', '-c', 'credential.helper=', 'clone', '--depth', '1', '--single-branch', '--branch', p['branch'], '--', p['repository'], str(release)], env=git_environment(c), timeout=300)
         sha = command(['git', 'rev-parse', 'HEAD'], release)
