@@ -22,6 +22,7 @@ export function ProjectEditor({ project, connections, saving, onClose, onSave }:
   const [replaceEnvironment, setReplaceEnvironment] = useState(false)
   const [environment, setEnvironment] = useState('')
   const [environmentError, setEnvironmentError] = useState('')
+  const [nameError, setNameError] = useState('')
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [loading, setLoading] = useState(Boolean(form.connection_id))
   const [repositoryError, setRepositoryError] = useState('')
@@ -51,6 +52,12 @@ export function ProjectEditor({ project, connections, saving, onClose, onSave }:
   async function submit(event: FormEvent) {
     event.preventDefault()
     setEnvironmentError('')
+    setNameError('')
+    const name = form.name.trim().toLowerCase()
+    if (!/^[a-z][a-z0-9-]{1,40}$/.test(name)) {
+      setNameError('Použijte 2 až 41 znaků: písmena, čísla a pomlčky. Název musí začínat písmenem.')
+      return
+    }
     let parsed: Record<string, string> | undefined
     if (replaceEnvironment) {
       parsed = {}
@@ -64,12 +71,12 @@ export function ProjectEditor({ project, connections, saving, onClose, onSave }:
         parsed[key] = line.slice(index + 1)
       }
     }
-    if (await onSave(project?.id || 'new', { ...form, environment: parsed })) onClose()
+    if (await onSave(project?.id || 'new', { ...form, name, environment: parsed })) onClose()
   }
   return <Modal isOpen onClose={() => { if (!saving) onClose() }} maxWidth="max-w-2xl" title={<><FolderGit2 className="w-5 h-5 text-cyan-500" />{project ? 'Upravit projekt' : 'Nový projekt'}</>}>
     <form onSubmit={event => void submit(event)} className="p-6 space-y-5">
       <div className="grid sm:grid-cols-2 gap-4">
-        <Input label="Název projektu" required pattern="[a-z][a-z0-9-]{1,40}" placeholder="moje-aplikace" disabled={saving || Boolean(project?.commit)} value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} helperText={project?.commit ? 'Název je svázaný s kontejnery a volumes.' : 'Malá písmena, čísla a pomlčky; alespoň 2 znaky.'} />
+        <Input label="Název projektu" required minLength={2} maxLength={41} error={nameError} placeholder="moje-aplikace" disabled={saving || Boolean(project?.commit)} value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} helperText={project?.commit ? 'Název je svázaný s kontejnery a volumes.' : 'Písmena, čísla a pomlčky. Velká písmena se při uložení převedou na malá.'} />
         <Select label="Git připojení" required disabled={saving || loading} value={form.connection_id} onChange={event => {
           setForm({ ...form, connection_id: event.target.value, repository: '' }); setRepositories([]); setRepositoryError(''); setLoading(Boolean(event.target.value)); setHasMore(false)
         }}><option value="">Vyberte připojení</option>{connections.map(connection => <option key={connection.id} value={connection.id}>{connection.name}</option>)}</Select>

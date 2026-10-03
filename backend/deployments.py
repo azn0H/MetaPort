@@ -13,7 +13,7 @@ import docker
 import httpx
 from cryptography.fernet import Fernet
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from routers.auth import require_roles
 
 ROOT = Path(os.getenv('METAPORT_DEPLOY_ROOT', '/opt/metaport-deploy'))
@@ -60,6 +60,11 @@ class Project(BaseModel):
     compose_file: str = 'compose.yaml'
     auto_deploy: bool = False
     environment: dict[str, str] | None = None
+
+    @field_validator('name', mode='before')
+    @classmethod
+    def normalize_name(cls, value):
+        return value.strip().lower() if isinstance(value, str) else value
 
 @router.get('')
 def listing():

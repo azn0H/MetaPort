@@ -24,7 +24,19 @@ export async function deploymentRequest<T>(path: string, method = 'GET', body?: 
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   const result = await response.json()
-  if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Požadavek byl odmítnut. Ověřte zadané hodnoty.')
+  if (!response.ok) {
+    if (typeof result.detail === 'string') throw new Error(result.detail)
+    if (Array.isArray(result.detail)) {
+      const labels: Record<string, string> = { name: 'Název projektu', connection_id: 'Git připojení', repository: 'Repozitář', branch: 'Sledovaná větev', compose_file: 'Compose soubor', environment: 'Proměnné prostředí', token: 'Přístupový token', provider: 'Provider' }
+      const messages = result.detail.map((error: { loc?: unknown[]; type?: string }) => {
+        const field = String(error.loc?.[1] || '')
+        if (field === 'name' && error.type === 'string_pattern_mismatch') return 'Název projektu: použijte 2 až 41 znaků, písmena, čísla a pomlčky; začněte písmenem.'
+        return `${labels[field] || 'Zadané hodnoty'}: ${error.type === 'missing' ? 'povinné pole není vyplněné.' : 'hodnota není platná.'}`
+      })
+      throw new Error([...new Set(messages)].join(' '))
+    }
+    throw new Error('Požadavek byl odmítnut. Ověřte zadané hodnoty.')
+  }
   return result as T
 }
 export function formatBytes(value: number | null | undefined): string {

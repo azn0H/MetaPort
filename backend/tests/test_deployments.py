@@ -44,6 +44,15 @@ class DeploymentTests(unittest.TestCase):
         self.assertNotIn('secret-password', response.text)
         self.assertEqual(response.json()['projects'][0]['environment_keys'], ['PASSWORD'])
 
+    def test_uppercase_project_name_is_normalized_and_duplicate_checked(self):
+        result = self.api.put('/api/v1/deployments/projects/new', json=self.data | {'name': ' Vortex '})
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(d.read()['projects'][-1]['name'], 'vortex')
+        duplicate = self.api.put('/api/v1/deployments/projects/new', json=self.data | {'name': 'VORTEX'})
+        self.assertEqual(duplicate.status_code, 409)
+        invalid = self.api.put('/api/v1/deployments/projects/new', json=self.data | {'name': 'Bad Name!'})
+        self.assertEqual(invalid.status_code, 422)
+
     def test_authorization(self):
         self.app.dependency_overrides[get_current_user] = lambda: User(role='betteradmin')
         for route in ['', '/disk', '/repositories/' + self.cid]:
